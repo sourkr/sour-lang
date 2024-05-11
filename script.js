@@ -1,7 +1,7 @@
 function highlightSour(code) {
   code = code
     .replaceAll(/(class|fun)\b/g, `<key-def>$1</key-def>`)
-    .replaceAll(/(return)/g, `<key>$1</key>`)
+    .replaceAll(/(return|export|import)/g, `<key>$1</key>`)
     .replace(/\b(\d+)/gm, `<num>$1</num>`)
     .replace(/(true|false)/gm, `<bool>$1</bool>`)
     .replace(/(\w+)\(/g, `<fname>$1</fname>(`)
