@@ -1,89 +1,147 @@
-/* Basic styles */
 body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
+  background-color: #e0f2f1;  /* Light blue background */
 }
 
-h1, h2, p {
-  margin: 0;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-img {
-  width: 100%;
-  height: auto;
-}
-
-/* Header styling */
-.hero {
+header {
+  background-color: #a9d0d5;  /* Darker blue for header */
   padding: 20px;
   text-align: center;
 }
 
-.hero h1 {
-  font-size: 2em;
-  margin-bottom: 10px;
+h1, h2, h3, h4 {
+  margin: 0;
+  padding: 10px;
 }
 
-.hero p {
-  font-size: 1em;
-  color: #888;
-  margin-bottom: 20px;
-}
-
-.hero .button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  display: block;  /* Stack buttons vertically */
-  margin: 10px auto;
-}
-
-.hero .button:hover {
-  background-color: #3e8e41;
-}
-
-/* Main content styling */
 main {
   padding: 20px;
 }
 
-.about, .benefits {
+section {
+  position: relative;
   margin-bottom: 20px;
 }
 
-.about h2, .benefits h2 {
-  font-size: 1.5em;
+.get-started ul, .more-resources ul {
+  list-style: none;
+  padding: 0;
+}
+
+.get-started ul li, .more-resources ul li {
   margin-bottom: 10px;
 }
 
-.benefits ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+a {
+  color: #3498db;  /* Blue link color */
+  text-decoration: none;
 }
 
-.benefits li {
-  margin-bottom: 5px;
+a:hover {
+  text-decoration: underline;
 }
 
-pre {
-  background-color: #f5f5f5;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-/* Footer styling */
 footer {
   text-align: center;
   padding: 10px;
-  background-color: #f0f0f0;
+  background-color: #a9d0d5;  /* Same darker blue for footer */
+  color: white;
+}
+
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 30px 20px;
+  color: white;
+  text-shadow: 0 0 1px lightgray;
+}
+
+.hero-image {
+  display: block;
+  position: absolute;
+  z-index: -1;
+  box-sizing: border-box;
+  left: 0;
+  top: 0;
+  width: 100%;
+  scale: 1.3;
+  filter: blur(5px);
+}
+
+.hero h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.hero a {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border-radius: 5px;
+  text-decoration: none;
+}
+
+.hero a:hover {
+  background-color: #2980b9;
+}
+
+.highlight {
+  color: #e0f2f1;  /* Light blue for highlighted text */
+}
+
+pre {
+  background-color: #1E1E1E;  /* Dark background color */
+  color: #DADADA;              /* Light foreground color for code */
+  padding: 10px;
+  border-radius: 5px;
+  overflow: auto;              /* Enable scrolling for long code snippets */
+}
+
+str {
+  color: #ce9178;
+}
+
+key-def {
+  color: #569CD6;
+}
+
+key {
+  color: #D8A0DF;
+}
+
+punc {
+  color: #C8C8C8;
+}
+
+cmt {
+  color: #57A64A; /* Light blue for comments */
+}
+
+num {
+  color: #b5cea8; /* Light blue for numbers */
+}
+
+bool {
+  color: #4EC9B0;
+}
+
+fname {
+  color: #DCDCAA;
+}
+
+cls {
+  color: #4EC9B0;
+}
+
+vname {
+  color: #9cdcfe;
 }

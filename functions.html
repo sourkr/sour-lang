@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sour Functions | Sour Documentation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Sour Documentation</h1>
+    <p>Learn About Functions</p>
+  </header>
+  <main>
+    <section class="intro">
+      <h2>Introducing Functions in Sour</h2>
+      <p>Functions are reusable blocks of code that perform specific tasks in your Sour programs. They help you organize your code, improve readability, and avoid redundancy.</p>
+    </section>
+    <section class="content">
+      <h3>Defining Functions</h3>
+      <p>Here's the general syntax for defining a function in Sour:</p>
+      <pre class="code">fun functionName(parameters) {
+  // Function body (code to be executed)
+  return value;  // Optional: return a value
+}
+      </pre>
+      <ul>
+        <li>**`fun`:** Keyword to declare a function.</li>
+        <li>**`functionName`:** A descriptive name for your function.</li>
+        <li>**`parameters`:** Optional comma-separated list of variables that the function can accept as input.</li>
+        <li>**`Function body`:** The code that gets executed when the function is called.</li>
+        <li>**`return`:** Optional statement that returns a value from the function.</li>
+      </ul>
+      <h3>Calling Functions</h3>
+      <p>Once you define a function, you can call it by its name followed by parentheses:</p>
+      <pre class="code">// Example function to greet someone
+fun greet(name) {
+  print("Hello, " + name + "!");
+}
+
+// Calling the greet function
+greet("Alice");  // Output: Hello, Alice!
+      </pre>
+      <p>In this example, the `greet` function takes a parameter named `name`, and when called with the value "Alice", it prints a personalized greeting.</p>
+    </section>
+    <section class="advanced">
+      <h3>Benefits of Functions (Optional)</h3>
+      <ul>
+        <li>**Code Reusability:** Functions allow you to write code once and use it multiple times throughout your program.</li>
+        <li>**Improved Readability:** Functions break down complex logic into smaller, manageable parts, making code easier to understand.</li>
+        <li>**Modular Design:** Functions promote modularity, allowing you to organize your code into well-defined units.</li>
+      </ul>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2024 Sourav Kumar</p>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>

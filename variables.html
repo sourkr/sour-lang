@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sour Variables | Sour Documentation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Sour Documentation</h1>
+    <p>Learn About Variables</p>
+  </header>
+  <main>
+    <section class="intro">
+      <h2>Understanding Variables in Sour</h2>
+      <p>Variables are like containers that hold data in your Sour programs. You can use them to store information and manipulate it throughout your code.</p>
+    </section>
+    <section class="content">
+      <h3>Declaring Variables</h3>
+      <p>To create a variable in Sour, you use the `var` keyword followed by the variable name and an assignment operator (`=`) to assign a value:</p>
+      <pre class="code">var name = "Alice";  // String variable
+var age = 30;          // Number variable
+var isLoggedIn = true;  // Boolean variable</pre>
+      <p>In these examples, `name`, `age`, and `isLoggedIn` are variable names, and the values assigned are "Alice", 30, and true, respectively.</p>
+      <h3>Using Variables</h3>
+      <p>Once you declare a variable, you can use its name to access the stored value in your code. Here's an example:</p>
+      <pre class="code">print("Hello, " + name + "!");</pre>
+      <p>In this code, the `name` variable's value ("Alice") is used within the `print` statement to create a personalized greeting.</p>
+      <h3>Naming Conventions (Optional)</h3>
+      <p>While Sour is not strictly case-sensitive, it's recommended to follow good naming conventions for readability:</p>
+      <ul>
+        <li>Use descriptive names that reflect the variable's purpose (e.g., `customerName`, `totalCost`).</li>
+        <li>Start variable names with lowercase letters.</li>
+        <li>Use camelCase for multi-word names (e.g., `numberOfItems`).</li>
+      </ul>
+    </section>
+    <section class="advanced">
+      <h3>Variable Scope (Optional)</h3>
+      <p>Sour may have different variable scoping rules depending on its implementation. Here's a general concept found in many programming languages (check your Sour documentation for specifics):</p>
+      <ul>
+        <li>**Local Scope:** Variables declared within a function or block are only accessible within that scope.</li>
+        <li>**Global Scope:** Variables declared outside of functions or blocks are accessible throughout the program.</li>
+      </ul>
+      <p>Understanding variable scope is crucial for avoiding naming conflicts and writing well-structured Sour code.</p>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2024 Sourav Kumar</p>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
