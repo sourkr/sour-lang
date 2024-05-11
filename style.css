@@ -6,6 +6,8 @@ body {
   background: var(--background);
   padding: 0;
   margin: 0;
+  font-size: .94rem;
+  line-height: 1.5em;
 }
 
 header {
@@ -46,6 +48,7 @@ svg {
 .hero {
   position: relative;
   display: block;
+  line-height: 2rem;
 }
 
 .hero img {
@@ -86,4 +89,46 @@ button {
   padding: 10px 20px;
   font-size: 1.2em;
   border-radius: 30px;
+}
+
+button a {
+  text-decoration: none;
+}
+
+main {
+  padding: 15px;
+}
+
+note {
+  position: relative;
+  background: hsl(50, 100%, 90%);
+  display: block;
+  padding: 15px;
+  padding-left: 40px;
+  border-radius: 10px;
+  font-size: 0.9em;
+  line-height: 1.5em;
+  color: hsl(50, 100%, 20%);
+}
+
+note::before {
+  content: 'import_contacts';
+  font-family: 'Material Symbols Rounded';
+  font-size: 1.3em;
+  position: absolute;
+  left: 10px;
+  top: 15px;
+}
+
+ul {
+  padding-left: 15px;
+}
+
+li {
+  padding: 10px;
+}
+
+a {
+  color: black;
+  text-decoration-color: hsl(50, 100%, 40%);
 }
