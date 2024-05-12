@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap');
+
 :root {
   --background: hsl(50, 100%, 98%);
 }
@@ -245,6 +247,7 @@ pre {
   border: 1px solid hsla(50, 100%, 35%, .3);
   font-size: .9em;
   line-height: 1.3em;
+  font-family: "Fira Code", monospace;
 }
 
 pre[slot=code] {
