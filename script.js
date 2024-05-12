@@ -1,3 +1,6 @@
+const tag = /<(?<tag>.*?)>(.*?)<\/\k<tag>>/g
+const version = '0.1 Beta'
+
 function lint(code) {
   code = code
     .replaceAll(/(class|fun)\b/g, `<keydef>$1</keydef>`)
@@ -21,7 +24,7 @@ function lint(code) {
   code = code
     .replace(/\/\/.*$/gm, full => {
       full = full
-        .replace(/<(?<tag>.*?)>(.*?)<\/\k<tag>>/g, '$2')
+        .replace(tag, '$2')
         .replaceAll('<', '&lt;')
         
       return `<cmt>${full}</cmt>`
@@ -31,6 +34,11 @@ function lint(code) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  header()
+  highlight()
+});
+
+function highlight() {
   const pres = document.querySelectorAll("pre");
   
   for (const pre of pres) {
@@ -38,4 +46,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const html = lint(code);
     pre.innerHTML = html;
   }
-});
+}
+
+function header() {
+  document.querySelector('.subtitle').innerText = version
+}
