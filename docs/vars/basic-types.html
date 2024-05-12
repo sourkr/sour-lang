@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sour Variables</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@40,400,1,0" />
+</head>
+
+<body>
+  <header>
+    <span class="material-symbols-rounded">menu</span>
+    <img src="../icon.png">
+
+    <div class="heading">
+      <span class="title">Sour Lang</span>
+      <span class="subtitle">v 0.0.1</span>
+    </div>
+  </header>
+
+  <main>
+    <h1>Basic types</h1>
+
+    <nav>
+      <ol>
+        <li class="done"><a href="hello-world.html">Hello world</a></li>
+        <li class="in"><a href="basic-types.html">Basic Types</a></li>
+        <li><a href="fun.html">Functions</a></li>
+        <li><a href="cls.html">Classes</a></li>
+      </ol>
+    </nav>
+
+    <p>These are the following data types in Sour.</p>
+
+    <ul>
+      <li><a href="#num">Numbers</a></li>
+      <li><a href="#str">Strings</a></li>
+      <li><a href="#nul">Null</a></li>
+    </ul>
+
+    <section id="num">
+      <h2>Numbers</h2>
+
+      <ul>
+        <li>Positive integers
+          <code>64</code>,
+          <code class="miss">+64</code>
+        </li>
+        <li>Negative integers
+          <code class="miss">-64</code>
+        </li>
+        <li>Decimanls
+          <code class="miss">4.5</code>
+        </li>
+      </ul>
+
+        <pre>
+var a = 1
+print(a) // 1
+</pre>
+    </section>
+
+    <section id="str">
+      <h2>Strings</h2>
+      
+      <ul>
+        <li>Anything surrounded by double quotes
+          <code>"abc 929 ;,"</code>
+        </li>
+        <li>Use
+          <code>\"</code> to a
+          <code>"</code> between string
+          <code>"abc 929 \" ;,"</code>
+          <code class="err">"abc " abc "</code>
+        </li>
+      </ul>
+      
+        <pre>
+var str = "My name is \"Jony\"."
+print(str) // My name is "Jony".
+</pre>
+    </section>
+    
+    <section id="nul">
+      <h2>Null</h2>
+      
+      <p>The idea of null is generally used to indicate the absence of a value or an empty reference. It's useful in situations where a variable might not have any data assigned to it yet but will assigned one in future.</p>
+      
+        <pre>
+var name = null
+print(name) // null
+name = "Marky"
+print(name) // Marky
+</pre>
+      
+      <note>
+        <code>null</code> value can be printed with
+        <code>print()</code> function.
+      </note>
+    </section>
+    
+    <h2>Next Step</h2>
+    <a href="fun.html">Functions</a>
+  </main>
+
+  <script src="../script.js"></script>
+</body>
+
+</html>

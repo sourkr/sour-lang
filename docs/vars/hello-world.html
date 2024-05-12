@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sour Variables</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@40,400,1,0" />
+</head>
+
+<body>
+  <header>
+    <span class="material-symbols-rounded">menu</span>
+    <img src="../icon.png">
+
+    <div class="heading">
+      <span class="title">Sour Lang</span>
+      <span class="subtitle">v 0.0.1</span>
+    </div>
+  </header>
+
+  <main>
+    <h1>Hello world</h1>
+
+    <nav>
+      <ol>
+        <li class="in"><a href="hello-world.html">Hello world</a></li>
+        <li><a href="basic-types.html">Basic Types</a></li>
+        <li><a href="fun.html">Functions</a></li>
+        <li><a href="cls.html">Classes</a></li>
+      </ol>
+    </nav>
+
+    <p>Here is a simple program that prints "Hello, world!":</p>
+
+    <pre>
+print("Hello, World!")
+  // Hello, World!
+</pre>
+
+    <p>
+    <code>print()</code> is a function which print its give data into the standard output</p>
+
+    <info>
+      Functions are discussed in more detail in a couple of chapters. Until then, all examples use the
+      <code>print()</code> function.
+    </info>
+
+    <h2>Variables</h2>
+
+    <p>All programs need to be able to store data, and variables help you to do just that. In Sour, you can declare:</p>
+
+    <ul>
+      <li>read-only variables with
+        <code class="miss">const</code>
+      </li>
+      <li>mutable variables with
+        <code>var</code>
+      </li>
+    </ul>
+
+    <p>To assign a value, use the assignment operator
+    <code>=</code>.</p>
+
+    For example:
+
+      <pre>
+var popcorn = 5    // there are 5 boxes of popcorn
+var hotdog = 7     // There are 7 hotdogs
+var customers = 10 // There are 10 customers in the queue
+
+// Some customers leave the queue
+customers = 8
+print(customers) // 8
+</pre>
+
+    <p>A variable can store any type of value and can be changed to another type of value.</p>
+
+    <h2>Next Step</h2>
+    <a href="basic-types.html">Basic Types</a>
+  </main>
+
+  <script src="../script.js"></script>
+</body>
+
+</html>
