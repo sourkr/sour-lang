@@ -29,7 +29,7 @@ function lint(code) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-  const pres = document.querySelectorAll("code pre");
+  const pres = document.querySelectorAll("pre");
   
   for (const pre of pres) {
     const code = pre.innerText;
