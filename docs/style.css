@@ -246,6 +246,12 @@ pre {
   line-height: 1.3em;
 }
 
+pre[slot=code] {
+  margin: 0;
+  border: none;
+  /* padding: 10px; */
+}
+
 keydef, key { color: red }
 fname { color: dodgerblue }
 str { color: olivedrab }

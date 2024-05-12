@@ -33,13 +33,17 @@
 
     <p>Here is a simple program that prints "Hello, world!":</p>
 
-    <pre>
-print("Hello, World!")
-  // Hello, World!
-</pre>
+    <code-block>
+      <span slot="name">Hello World</span>
+      <pre slot="code">
+        print("Hello, World!")
+        // Hello, World!
+      </pre>
+    </code-block>
 
     <p>
-    <code>print()</code> is a function which print its give data into the standard output</p>
+      <code>print()</code> is a function which print its give data into the standard output
+    </p>
 
     <info>
       Functions are discussed in more detail in a couple of chapters. Until then, all examples use the
@@ -60,19 +64,24 @@ print("Hello, World!")
     </ul>
 
     <p>To assign a value, use the assignment operator
-    <code>=</code>.</p>
+      <code>=</code>.
+    </p>
 
     For example:
 
-      <pre>
-var popcorn = 5    // there are 5 boxes of popcorn
-var hotdog = 7     // There are 7 hotdogs
-var customers = 10 // There are 10 customers in the queue
+    <code-block>
+      <span slot="name">Variables</span>
 
-// Some customers leave the queue
-customers = 8
-print(customers) // 8
-</pre>
+      <pre slot="code">
+        var popcorn = 5    // there are 5 boxes of popcorn
+        var hotdog = 7     // There are 7 hotdogs
+        var customers = 10 // There are 10 customers in the queue
+        
+        // Some customers leave the queue
+        customers = 8
+        print(customers) // 8
+      </pre>
+    </code-block>
 
     <p>A variable can store any type of value and can be changed to another type of value.</p>
 
@@ -80,7 +89,7 @@ print(customers) // 8
     <a href="basic-types.html">Basic Types</a>
   </main>
 
-  <script src="../script.js"></script>
+  <script type="module" src="../script.js"></script>
 </body>
 
 </html>
