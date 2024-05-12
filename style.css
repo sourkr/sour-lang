@@ -23,6 +23,11 @@ h2 {
   margin-block: 50px 20px;
 }
 
+main {
+  padding: 15px;
+  margin-top: 50px;
+}
+
 header {
   position: fixed;
   height: 50px;
@@ -34,6 +39,7 @@ header {
   background: var(--background);
   width: 100%;
   z-index: 1;
+  top: 0;
 }
 
 header img {
@@ -110,10 +116,6 @@ button {
 
 button a {
   text-decoration: none;
-}
-
-main {
-  padding: 15px;
 }
 
 info, note {
@@ -198,7 +200,7 @@ nav ol {
 ol li::before {
   content: counter(index);
   counter-increment: index;
-  background: hsl(50, 100%, 25%);
+  background: gray;
   display: inline-block;
   width: 24px;
   height: 24px;
@@ -212,6 +214,17 @@ ol li:first-child {
   counter-reset: index;
 }
 
+.in::before {
+  background: hsl(50, 100%, 20%);
+}
+
+.done::before {
+  background: var(--background);
+  color: hsl(50, 100%, 25%);
+  border: 2px solid hsl(50, 100%, 40%);
+  box-sizing: border-box;
+}
+
 code {
   background: hsla(50, 45%, 90%, .5);
   border-radius: 5px;
@@ -219,8 +232,7 @@ code {
   padding: 3px 7px;
   font-size: .94em;
   margin: 0;
-  /* line-height: 0px; */
-  /* color: black; */
+  font-family: monospace;
 }
 
 pre {
@@ -234,7 +246,7 @@ pre {
   line-height: 1.3em;
 }
 
-keydef { color: red }
+keydef, key { color: red }
 fname { color: dodgerblue }
 str { color: olivedrab }
 cmt { color: gray }

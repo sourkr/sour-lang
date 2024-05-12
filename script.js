@@ -1,7 +1,7 @@
 function lint(code) {
   code = code
     .replaceAll(/(class|fun)\b/g, `<keydef>$1</keydef>`)
-    .replaceAll(/(return|export|import)/g, `<key>$1</key>`)
+    .replaceAll(/(return|export|import|new)/g, `<key>$1</key>`)
     .replace(/\b(\d+)/gm, `<num>$1</num>`)
     .replace(/(true|false)/gm, `<bool>$1</bool>`)
     .replace(/(\w+)\(/g, `<fname>$1</fname>(`)
@@ -16,12 +16,14 @@ function lint(code) {
       
       return `<str>${full}</str>`
     })
-    
+  
+  
   code = code
     .replace(/\/\/.*$/gm, full => {
       full = full
-        .replace(/\<.*?>|<\\\w+>/g, '')
-  
+        .replace(/<(?<tag>.*?)>(.*?)<\/\k<tag>>/g, '$2')
+        .replaceAll('<', '&lt;')
+        
       return `<cmt>${full}</cmt>`
     })
     
