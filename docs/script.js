@@ -89,6 +89,7 @@ const template = (html`
     border-top: 1px solid hsl(50 50% 50%);
     display: none;
     padding: 10px;
+    overflow-x: scroll;
   }
   
   #run {
@@ -117,6 +118,10 @@ function html(a, ...b) {
 }
 
 class CodeBlock extends HTMLElement {
+  static observedAttributes = [ 'disable' ]
+  
+  #root
+  
   constructor() {
     super()
     
@@ -135,6 +140,12 @@ class CodeBlock extends HTMLElement {
       
       interprater.interprateCode(code)
     }
+    
+    this.#root = root
+  }
+    
+  attributeChangedCallback(name, oldVal, newVal) {
+    this.#root.getElementById('run').style.display = 'none'
   }
 }
 

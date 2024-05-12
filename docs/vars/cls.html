@@ -30,70 +30,94 @@
         <li class="in"><a href="cls.html">Classes</a></li>
       </ol>
     </nav>
-    
+
     <p>Sour supports object-oriented programming with classes and objects. Objects are useful for storing data in your program. Classes allow you to declare a set of characteristics for an object. When you create objects from a class, you can save time and effort because you don't have to declare these characteristics every time.</p>
-    
+
     <p>To declare a class, use the <code>class</code> keyword:</p>
-    
+
     <p>Within the class body defined by curly braces <code>{}</code>.</p>
-    
-    <pre>
-class Customer {}
-</pre>
-    
+
+    <code-block disable>
+      <span slot="name">Classes</span>
+      <pre slot="code">
+        class Customer {}
+      </pre>
+    </code-block>
+
     <h2>Properties﻿</h2>
-    
+
     <p>Characteristics of a class's object can be declared in properties. You can declare properties for a class:</p>
-    
-    <pre>
-class Contact {
-  var id = 93
-  var email = "default.email@abc.com"
-}
-</pre>
-    
+
+    <code-block disable>
+      <span slot="name">Classes</span>
+      <pre slot="code">
+        class Contact {
+          var id = 93
+          var email = "default.email@abc.com"
+        }
+      </pre>
+    </code-block>
+
     <h2>Create Instance</h2>
-    
-    <pre>
-var contact = new Contact()
-print(contact) // { this: &lt;This&gt;, id: 93, email: "default.email@abc.com" }
-</pre>
-    
+
+    <code-block>
+      <span slot="name">Classes</span>
+      <pre slot="code">
+        class Contact {
+          var id = 93
+          var email = "default.email@abc.com"
+        }
+        
+        var contact = new Contact()
+        print(contact) // { this: &lt;This&gt;, id: 93, email: default.email@abc.com }
+      </pre>
+    </code-block>
+
     <h2>Access properties﻿</h2>
-    
+
     <p>To access a property of an instance, write the name of the property after the instance name appended with a period <code>.</code>:</p>
-      console.log(full)
-    
-    <pre>
-print(contact.email) // default.email@abc.com
+    console.log(full)
 
-contact.email = "new.email@abc.com"
+    <code-block disable>
+      <span slot="name">Classes</span>
+      <pre slot="code">
+        class Contact {
+          var id = 93
+          var email = "default.email@abc.com"
+        }
+        
+        var contact = new Contact()
+        
+        print(contact.email) // default.email@abc.com
+        
+        contact.email = "new.email@abc.com"
+        
+        print(contact.email) // new.email@abc.com
+      </pre>
+    </code-block>
 
-print(contact.email) // new.email@abc.com
-</pre>
-    
     <h2>Member functions</h2>
-    
-    <p>In addition to declaring properties as part of an object's characteristics, you can also define an object's behavior with member functions.</p>
-    
-    <p>In Sour, member functions must be declared within the class body. To call a member function on an instance, write the function name after the instance name appended with a period <code>.</code>. For example:</p>
-    
-    <pre>
-class Contact {
-  var id = 93
-  var email = "default.email@abc.com"
-  
-  fun print_id() {
-    print(id)
-  }
-}
 
-var contact = new Contact()
-contact.print_id() // 93
-</pre>
-    
-    
-    
+    <p>In addition to declaring properties as part of an object's characteristics, you can also define an object's behavior with member functions.</p>
+
+    <p>In Sour, member functions must be declared within the class body. To call a member function on an instance, write the function name after the instance name appended with a period <code>.</code>. For example:</p>
+
+    <code-block><span slot="name">Classes</span>
+      <pre slot="code">
+        class Contact {
+          var id = 93
+          var email = "default.email@abc.com"
+          
+          fun print_id() {
+            print(id)
+          }
+        }
+        
+        var contact = new Contact()
+        contact.print_id() // 93
+      </pre>
+    </code-block>
+
     <!-- <h2>Next Step</h2> -->
     <!-- <a href="basic-types.html">Basic Types</a> -->
   </main>

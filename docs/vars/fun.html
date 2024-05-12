@@ -30,66 +30,78 @@
         <li><a href="cls.html">Classes</a></li>
       </ol>
     </nav>
-    
-    <p>You can declare your own functions in Sour using the <code>fun</code> keyword.</p>
-    
-    <pre>
-fun hello() {
-  print("Hello, World!")
-  return "success"
-}
 
-hello()
-    </pre>
-    
+    <p>You can declare your own functions in Sour using the <code>fun</code> keyword.</p>
+
+    <code-block>
+      <span slot="name">Functions</span>
+      <pre slot="code">
+        fun hello() {
+          print("Hello, World!")
+          return "success"
+        }
+        
+        print(hello())
+      </pre>
+    </code-block>
+
     <p>In Sour Lang:</p>
-    
+
     <ul>
       <li>function parameters are written within parentheses <code>()</code>.</li>
       <li>multiple parameters must be separated by commas <code>,</code>.</li>
       <li>the body of a function is written within curly braces <code>{}</code>.</li>
       <li>the <code>return</code> keyword is used to exit or return something from a function.</li>
     </ul>
-    
+
     In the following example:
-    
+
     <ul>
       <li><code>x</code> and <code>y</code> are function parameters.</li>
       <li>the function returns a sum of <code>x</code> and <code>y</code> when called.</li>
     </ul>
-    
-    <pre>
-fun sum(x, y) {
-  return x + y
-}
 
-print(sum(1, 2)) // 3
-</pre>
-    
+    <code-block disable>
+      <span slot="name">Functions</span>
+      <pre slot="code">
+        fun sum(x, y) {
+          return x + y
+        }
+        
+        print(sum(1, 2)) // 3
+      </pre>
+    </code-block>
+
     <h2>Assign to Variable</h2>
-    
-    <pre>
-fun to_upper_case_str(str) {
-  return str.uppercase()
-}
 
-var upper_case = to_upper_case_str
+    <code-block disable>
+      <span slot="name">Functions</span>
+      <pre slot="code">
+        fun to_upper_case_str(str) {
+          return str.uppercase()
+        }
+        
+        var upper_case = to_upper_case_str
+        
+        print(upper_case("Hello")) // HELLO
+      </pre>
+    </code-block>
 
-print(upper_case("Hello")) // HELLO
-</pre>
-    
     <h2>Pass to another function</h2>
-    
-    <pre>
-fun positive(n) {
-  return n > 0
-}
 
-var a = [ 0, 4, -2, 1, 5 ]
+    <code-block disable>
+      <span slot="name">Functions</span>
+      <pre slot="code">
+        fun positive(n) {
+          return n > 0
+        }
+        
+        var a = [ 0, 4, -2, 1, 5 ]
+        
+        print(a.filter(positive)) // [ 4, 1, 5 ]
+      </pre>
+    </code-block>
 
-print(a.filter(positive)) // [ 4, 1, 5 ]
-</pre>
-    
     <h2>Next Step</h2>
     <a href="cls.html">Classes</a>
   </main>
