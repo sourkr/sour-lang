@@ -132,7 +132,7 @@ export class Tokenizer {
     
     if (this.#stream.peek() == '\\') {
       this.#stream.next()
-      str += this.#stream.peek() + this.#parseStr()
+      str += this.#stream.peek() + this.#parseStr().value
     }
     
     if (this.#stream.peek() == EOF) {
@@ -140,7 +140,6 @@ export class Tokenizer {
     }
     
     this.#stream.next()
-    
     return token('str', str, start, this.#stream.pos())
   }
 }

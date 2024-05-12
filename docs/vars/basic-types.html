@@ -54,11 +54,15 @@
           <code class="miss">4.5</code>
         </li>
       </ul>
-
-        <pre>
-var a = 1
-print(a) // 1
-</pre>
+      
+      <code-block>
+        <span slot="name">Numbers</span>
+        <pre slot="code">
+          var a = 1
+          print(a) // 1
+        </pre>
+      </code-block>
+        
     </section>
 
     <section id="str">
@@ -76,10 +80,14 @@ print(a) // 1
         </li>
       </ul>
       
-        <pre>
-var str = "My name is \"Jony\"."
-print(str) // My name is "Jony".
-</pre>
+      <code-block>
+        <span slot="name">Strings</span>
+        <pre slot="code">
+          var str = "My name is \"Jony\"."
+          
+          print(str) // My name is "Jony".
+        </pre>
+      </code-block>
     </section>
     
     <section id="nul">
@@ -87,12 +95,15 @@ print(str) // My name is "Jony".
       
       <p>The idea of null is generally used to indicate the absence of a value or an empty reference. It's useful in situations where a variable might not have any data assigned to it yet but will assigned one in future.</p>
       
-        <pre>
-var name = null
-print(name) // null
-name = "Marky"
-print(name) // Marky
-</pre>
+      <code-block>
+        <span slot="name">Null Value</span>
+        <pre slot="code">
+          var name = null
+          print(name) // null
+          name = "Marky"
+          print(name) // Marky
+        </pre>
+      </code-block>
       
       <note>
         <code>null</code> value can be printed with

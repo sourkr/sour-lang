@@ -130,7 +130,7 @@ class CodeBlock extends HTMLElement {
       out.style.display = 'block'
       
       const interprater = new Interprater(msg => {
-        out.innerText += msg
+        out.innerText += msg + '\n'
       })
       
       interprater.interprateCode(code)
