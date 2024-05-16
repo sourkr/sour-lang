@@ -22,7 +22,7 @@ export class Parser {
   
   #parseExpr() {
     switch (this.#peekToken().type) {
-      case 'ident': return this.#mayDot(this.#parseIdent())
+      case 'ident': return this.#parseIdent()
       
       case 'num' :
       case 'str' :
@@ -95,9 +95,6 @@ export class Parser {
   // expr
   #parseIdent() {
     const ident = this.#nextToken()
-    
-    if(ident.value == 'new')
-      return { type: 'new', keyword: ident, call: this.#parseCall(this.#nextToken()) }
     
     switch (true) {
       case this.#isPunc('('): return this.#parseCall(ident)

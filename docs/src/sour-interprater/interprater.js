@@ -28,7 +28,7 @@ export class Interprater {
     this.interprateCode(await (await fetch(new URL(file, root))).text())
   }
   
-  async interprateCode(code) {
+  interprateCode(code) {
     const validator = new Validator(code)
     const ast = validator.validate()
     // console.log(ast)
@@ -50,7 +50,7 @@ export class Interprater {
     this.#interprateBody(ast.body)
   }
   
-  async #interprateStmt(stmt, self = this.#global, local = this.#global, isExport = false) {
+  #interprateStmt(stmt, self = this.#global, local = this.#global, isExport = false) {
     if (stmt.type == 'err') this.#error(stmt)
     
     let value
@@ -63,14 +63,14 @@ export class Interprater {
     
     if (stmt.type == 'const') this.#global.define_variable(stmt.name.value, this.#interprateExpr(stmt.val))
     
-    await this.#interprateExpr(stmt, self, local)
+    this.#interprateExpr(stmt, self, local)
   }
   
-  async #interprateBody(body, self, local) {
+  #interprateBody(body, self, local) {
     for(let stmt of body) {
-      if(stmt.type == 'return') return await this.#interprateExpr(stmt.value, self)
+      if(stmt.type == 'return') return this.#interprateExpr(stmt.value, self)
       
-      await this.#interprateStmt(stmt, self, local)
+      this.#interprateStmt(stmt, self, local)
     }
   }
   
@@ -90,6 +90,10 @@ export class Interprater {
     if(expr.type == 'call') {
       const args = expr.args.map(this.#interprateExpr.bind(this))
       this.#global.get_function(expr.access.value, expr.index)(...args)
+    }
+    
+    if(expr.type == 'assign') {
+      this.#global.set_variable(expr.name.value, this.#interprateExpr(expr.val))
     }
   }
   

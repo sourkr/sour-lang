@@ -48,9 +48,12 @@ export class Validator {
       case 'num': return this.#checkNum(expr)
       case 'ident': return this.#checkIdent(expr)
       case 'char': return this.#checkChar(expr)
+      case 'assign': return this.#checkAssign(expr)
+      
       default: this.#error(`unexpected symbol`, expr)
     }
   }
+  
   
   // stmt
   #checkVar(v) {
@@ -186,6 +189,20 @@ export class Validator {
       val: str.value.slice(1, -1),
       typ: new InstanceType(this.#global.get_class('char'))
     }
+  }
+  
+  #checkAssign(assign) {
+    const name = assign.name.value
+    
+    if (this.#global.has_constant(name)) return this.#error(`cannot assign value of const`, assign.name, assign)
+    if (!this.#global.has_variable(name)) return this.#error(`cannot find variable ${name}`, assign.name, assign)
+    
+    const typ = this.#global.get_variable(name)
+    const val = this.#checkExpr(assign.value)
+    
+    if(!val.typ.isAssignableTo(typ)) this.#error(`value of type ${val.typ} is not assignable to variable of type ${typ}`, assign.value)
+    
+    return { ...assign, typ, val }
   }
   
   

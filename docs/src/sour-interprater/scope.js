@@ -67,7 +67,10 @@ export class BuiltinScope {
   /** @type { Map<String, ((...args: any[]) => any)[]> } */
   functions = new Map()
   
-  /** @param name { string } */
+  /**
+   * @param name { string }
+   * @param value { any }
+   */
   define_variable(name, value) {
     this.variables.set(name, value)
   }
@@ -76,6 +79,15 @@ export class BuiltinScope {
   get_variable(name) {
     return this.variables.get(name)
   }
+  
+  /**
+   * @param name { string }
+   * @param value { any }
+   */
+  set_variable(name, value) {
+    this.variables.set(name, value)
+  }
+  
   
   /** 
    * @param name { string }
