@@ -59,3 +59,58 @@ export class Scope {
 export class Class {
   interprate() {}
 }
+
+export class BuiltinScope {
+  /** @type { Map<String, any> } */
+  variables = new Map()
+  
+  /** @type { Map<String, ((...args: any[]) => any)[]> } */
+  functions = new Map()
+  
+  /** @param name { string } */
+  define_variable(name, value) {
+    this.variables.set(name, value)
+  }
+  
+  /** @param name { string } */
+  get_variable(name) {
+    return this.variables.get(name)
+  }
+  
+  /** 
+   * @param name { string }
+   * @param fun { (...args: any[]) => any }
+   */
+  define_function(name, fun) {
+    if(!this.functions.has(name)) this.functions.set(name, [])
+    this.functions.get(name).push(fun)
+  }
+  
+  /** 
+   * @param name { string }
+   * @param index { number }
+   */
+  get_function(name, index) {
+    return this.functions.get(name)[index]
+  }
+}
+
+export class Float {
+  constructor(val) {
+    this.value = val
+  }
+  
+  toString() {
+    return Number.isInteger(this.value) ? this.value + '.0' : this.value
+  }
+}
+
+export class Char {
+  constructor(val) {
+    this.value = val
+  }
+  
+  toString() {
+    return String.fromCharCode(this.value)
+  }
+}

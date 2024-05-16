@@ -1,7 +1,7 @@
 import { Interprater } from './src/sour-interprater/interprater.js';
 
 const tag = /<(?<tag>.*?)>(.*?)<\/\k<tag>>/g
-const version = '0.1 Beta'
+const version = '0.2 Beta'
 
 function lint(code) {
   code.replace(/(\s+)$/, (f, s) => {
@@ -16,7 +16,7 @@ function lint(code) {
     .replace(/(\w+)\(/g, `<fname>$1</fname>(`)
     .replace(/([(+){=}])/g, `<punc>$1</punc>`)
     .replace(/\b([A-Z]\w+)/g, `<cls>$1</cls>`)
-    .replace(/(var) (\w+)/g, `<keydef>$1</keydef> <vname>$2</vname>`)
+    .replace(/(var|const) (\w+)/g, `<keydef>$1</keydef> <vname>$2</vname>`)
     
   code = code
     .replace(/".*?(?<!\\)"/g, full => {
@@ -38,11 +38,6 @@ function lint(code) {
     
   return code
 }
-
-document.addEventListener("DOMContentLoaded", function() {
-  header()
-  highlight()
-});
 
 function highlight() {
   const pres = document.querySelectorAll("pre");
@@ -128,17 +123,20 @@ class CodeBlock extends HTMLElement {
     const root = this.attachShadow({ mode: 'open' })
     root.appendChild(template.cloneNode(true))
     
-    root.getElementById('run').onclick = () => {
+    root.getElementById('run').onclick = async () => {
       const code = root.getElementById('code').assignedElements()[0].innerText
       const out = root.getElementById('out') //.assignedElements()[0].value
       
       out.style.display = 'block'
       
-      const interprater = new Interprater(msg => {
-        out.innerText += msg + '\n'
-      })
+      const interprater = new Interprater()
       
       interprater.interprateCode(code)
+      
+      while(true) {
+        const msg = await interprater.stream.read()
+        out.innerText += msg + '\n'
+      }
     }
     
     this.#root = root
@@ -150,3 +148,6 @@ class CodeBlock extends HTMLElement {
 }
 
 customElements.define('code-block', CodeBlock)
+
+header()
+highlight()

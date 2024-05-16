@@ -26,93 +26,104 @@
       <ol>
         <li class="done"><a href="hello-world.html">Hello world</a></li>
         <li class="in"><a href="basic-types.html">Basic Types</a></li>
-        <li><a href="fun.html">Functions</a></li>
-        <li><a href="cls.html">Classes</a></li>
+        <!-- <li><a href="fun.html">Functions</a></li> -->
+        <!-- <li><a href="cls.html">Classes</a></li> -->
       </ol>
     </nav>
 
-    <p>These are the following data types in Sour.</p>
-
-    <ul>
-      <li><a href="#num">Numbers</a></li>
-      <li><a href="#str">Strings</a></li>
-      <li><a href="#nul">Null</a></li>
-    </ul>
-
-    <section id="num">
-      <h2>Numbers</h2>
-
-      <ul>
-        <li>Positive integers
-          <code>64</code>,
-          <code class="miss">+64</code>
-        </li>
-        <li>Negative integers
-          <code class="miss">-64</code>
-        </li>
-        <li>Decimanls
-          <code class="miss">4.5</code>
-        </li>
-      </ul>
-      
-      <code-block>
-        <span slot="name">Numbers</span>
-        <pre slot="code">
-          var a = 1
-          print(a) // 1
-        </pre>
-      </code-block>
+    <p>
+      Every variable and data structure in Sour Lang has a data type.
+      Data types are important because they tell the compiler what you are allowed to do with that variable or data structure.
+      In other words, what functions and properties it has.
+    </p>
+    
+    <p>
+      In the last chapter, Sour Lang was able to tell in the previous example that <code>customers</code> has type: <code>int</code>.
+      Sour Lang's ability to <b>infer</b> the data type is called <b>type inference</b>.
+      <code>customers</code> is assigned an integer value. From this, Sour Lang infers that <code>customers</code> has numerical data type: <code>int</code>. As a result, the compiler knows that you can perform arithmetic operations with customers:
+    </p>
+    
+    <code-block disable>
+      <span slot="name">Example</span>
+      <pre slot="code">
+        var customers = 10
         
-    </section>
-
-    <section id="str">
-      <h2>Strings</h2>
-      
-      <ul>
-        <li>Anything surrounded by double quotes
-          <code>"abc 929 ;,"</code>
-        </li>
-        <li>Use
-          <code>\"</code> to a
-          <code>"</code> between string
-          <code>"abc 929 \" ;,"</code>
-          <code class="err">"abc " abc "</code>
-        </li>
-      </ul>
-      
-      <code-block>
-        <span slot="name">Strings</span>
-        <pre slot="code">
-          var str = "My name is \"Jony\"."
-          
-          print(str) // My name is "Jony".
-        </pre>
-      </code-block>
-    </section>
+        // Some customers leave the queue
+        customers = 8
+        
+        customers = customers + 3 // Example of addition: 11
+        customers += 7 // Example of addition: 18
+        customers -= 3 // Example of subtraction: 15
+        customers *= 2 // Example of multiplication: 30
+        customers /= 3 // Example of division: 10
+        
+        print(customers) // 10
+      </pre>
+    </code-block>
     
-    <section id="nul">
-      <h2>Null</h2>
-      
-      <p>The idea of null is generally used to indicate the absence of a value or an empty reference. It's useful in situations where a variable might not have any data assigned to it yet but will assigned one in future.</p>
-      
-      <code-block>
-        <span slot="name">Null Value</span>
-        <pre slot="code">
-          var name = null
-          print(name) // null
-          name = "Marky"
-          print(name) // Marky
-        </pre>
-      </code-block>
-      
-      <note>
-        <code>null</code> value can be printed with
-        <code>print()</code> function.
-      </note>
-    </section>
+    <note>
+      +=, -=, *=, /=, and %= are augmented assignment operators. For more information, see Augmented assignments.
+    </note>
     
-    <h2>Next Step</h2>
-    <a href="fun.html">Functions</a>
+    <p>In total, Sour Lang has the following basic types:</p>
+    
+    <table>
+      <tr>
+        <th>Category</th>
+        <th>Basic Types</th>
+      </tr>
+      <tr>
+        <td>Integers</td>
+        <td>
+          <code>byte</code>,
+          <code>short</code>,
+          <code>int</code>,
+          <code>long</code>
+        </td>
+      </tr>
+      
+      <tr>
+        <td>Decimals</td>
+        <td>
+          <code>float</code>,
+          <code>double</code>
+        </td>
+      </tr>
+      
+      <tr>
+        <td>Booleans</td>
+        <td><code>bool</code></td>
+      </tr>
+      
+      <tr>
+        <td>Char</td>
+        <td><code>str</code></td>
+      </tr>
+      
+      <tr>
+        <td>String</td>
+        <td><code>str</code></td>
+      </tr>
+    </table>
+    
+    <p>
+      With this knowledge, you can declare variables and initialize them later.
+      Sour Lang can manage this as long as variables are initialized before the first read.
+    </p>
+    
+    <code-block>
+      <span slot="name">Basic Types</span>
+      <pre slot="code">
+        // Variable explicitly typed and initialized
+        const e: str = "hello"
+        
+        // Variables can be read because they have been initialized
+        print(e) // hello
+      </pre>
+    </code-block>
+    
+    <!-- <h2>Next Step</h2> -->
+    <!-- <a href="fun.html">Functions</a> -->
   </main>
 
   <script type="module" src="../script.js"></script>

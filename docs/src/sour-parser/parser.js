@@ -14,11 +14,7 @@ export class Parser {
   #parseStmt() {
     switch(true) {
       case this.#isKeyword('var'): return this.#parseVar()
-      case this.#isKeyword('fun'): return this.#parseFun()
-      case this.#isKeyword('class'): return this.#parseClass()
-      case this.#isKeyword('export'): return this.#parseExport()
-      case this.#isKeyword('import'): return this.#parseImport()
-      case this.#isKeyword('return'): return this.#parseReturn()
+      case this.#isKeyword('const'): return this.#parseConst()
       
       default: return this.#parseExpr()
     }
@@ -37,7 +33,7 @@ export class Parser {
       
       case 'cmt': return this.#parseStmt(this.#nextToken())
       
-      case 'punc': return this.#mayDot(this.#parsePunc())
+      // case 'punc': return this.#mayDot(this.#parsePunc())
       
       default: return error(`unexpected token ${this.#peekToken().value}`, this.#nextToken())
     }
@@ -45,115 +41,56 @@ export class Parser {
   
   // stmt
   #parseVar() {
-    const keyword = this.#nextToken()
-    const name    = this.#nextToken()
-    const equal   = this.#nextToken()
-    const value   = this.#parseExpr()
+    let valType
+    let value
     
-    return { type: 'var-dec', keyword, name, equal, value }
-  }
-  
-  #parseFun() {
-    const keyword = this.#nextToken()
-    const name    = this.#nextToken()
-    const rOpen = this.#nextToken()
+    this.#nextToken() // skip 'var'
     
-    const params = []
-    
-    let rClose
-    
-    if(this.#isPunc(')')) rClose = this.#nextToken()
-    
-    while (!rClose) {
-      const name = this.#nextToken()
-      // const col = this.#nextToken()
-      // const type = this.#nextToken()
-      
-      params.push(name)
-      
-      if(this.#isPunc(')')) {
-        rClose = this.#nextToken()
-        break
-      }
-      
-      const coma = this.#nextToken()
-    }
-    
-    const body    = this.#parseBody()
-    
-    return { type: 'fun-dec', keyword, name, body, params }
-  }
-  
-  #parseClass() {
-    const keyword = this.#nextToken()
+    if(!this.#isIdent()) return unexpected(this.#nextToken(), 'var', { })
     const name = this.#nextToken()
-    var extend
     
-    if(this.#isKeyword('extends')) {
-      this.#nextToken()
-      extend = this.#nextToken()
+    if(this.#isPunc(':')) {
+      this.#nextToken() // skip ':'
+    
+      if(!this.#isIdent()) return unexpected(this.#nextToken(), 'var', { name })
+      valType = this.#nextToken()
     }
     
-    const body = this.#parseBody()
+    if(this.#isPunc('=')) {
+      this.#nextToken() // skip '='
     
-    return { type: 'cls-dec', keyword, name, body, extends: extend }
-  }
-  
-  #parseExport() {
-    this.#nextToken()
-    
-    return { type: 'export', stmt: this.#parseStmt() }
-  }
-  
-  #parseImport() {
-    this.#nextToken() // skip import
-    this.#nextToken() // skip {
-    
-    const names = []
-    
-    let cClose
-    
-    if(this.#isPunc('}')) cClose = this.#nextToken()
-    
-    
-    while(!cClose) {
-      names.push(this.#nextToken())
-      
-      if (this.#isPunc('}')) {
-        cClose = this.#nextToken()
-        break
-      }
-      
-      this.#nextToken() // skip ','
+      value = this.#parseExpr()
+      if(is_error(value)) return unexpected(value, 'var', { name, valType })
     }
     
-    this.#nextToken() // skip 'form'
-    
-    const path = this.#nextToken()
-    
-    return { type: 'import', names, path }
+    if(!(valType || value)) return unexpected(this.#nextToken(), 'var', { name, valType, value })
+    return { type: 'var', name, valType, value }
   }
   
-  #parseReturn() {
-    this.#nextToken() // skip 'return'
+  #parseConst() {
+    this.#nextToken() // skip 'const'
+    
+    let valType
+    
+    if (!this.#isIdent()) return unexpected(this.#nextToken(), 'var', {})
+    const name = this.#nextToken()
+    
+    if (this.#isPunc(':')) {
+      this.#nextToken() // skip ':'
+    
+      if (!this.#isIdent()) return unexpected(this.#nextToken(), 'var', { name })
+      valType = this.#nextToken()
+    }
+    
+    if(!this.#isPunc('=')) return unexpected(this.#nextToken(), 'const', { name, valType })
+    this.#nextToken() // skip '='
+    
     const value = this.#parseExpr()
-    return { type: 'return', value }
+    if (is_error(value)) return unexpected(value, 'const', { name, valType })
+    
+    return { type: 'const', name, valType, value }
   }
   
-  #parseBody() {
-    const cOpen  = this.#nextToken()
-    const body   = []
-    
-    while (true) {
-      if (this.#isPunc('}')) {
-        const cClose = this.#nextToken()
-        return { type: "body", cOpen, cClose, body }
-      }
-      
-      const stmt = this.#parseStmt()
-      body.push(stmt)
-    }
-  }
   
   // expr
   #parseIdent() {
@@ -172,6 +109,7 @@ export class Parser {
   #parsePunc() {
     switch (true) {
       case this.#isPunc('<'): return this.#parseEle()
+      default: return error(`unexpected token ${stringify(token)}`, token - 1)
     }
   }
   
@@ -200,19 +138,30 @@ export class Parser {
   }
   
   #parseCall(access) {
+    const start = access.start
     const rOpen = this.#nextToken()
+    
     const args = []
     
-    if (this.#isPunc(')')) return { type: 'call', access, rOpen, rClose: this.#nextToken(), args }
+    if (this.#isPunc(')')) {
+      const rClose = this.#nextToken()
+      const end = rClose.end
+      return { type: 'call', access, args, start, end }
+    }
     
     while (true) {
       const expr = this.#parseExpr()
-      if(!expr || expr.type == 'err') return error(`cannot find end of argument list`, rOpen)
+      if(is_error(expr)) return unexpected(expr, 'call', { access, args })
       args.push(expr)
       
-      if(this.#isPunc(')')) return { type: 'call', access, rOpen, rClose: this.#nextToken(), args }
+      if(this.#isPunc(')')) {
+        const rClose = this.#nextToken()
+        const end = rClose.end
+        return { type: 'call', access, args, start, end }
+      }
       
-      args.at(-1).coma = this.#nextToken()
+      if(!this.#isPunc(',')) return unexpected(this.#nextToken(), 'call', { access, args })
+      this.#nextToken() // skip ','
     }
   }
   
@@ -248,6 +197,10 @@ export class Parser {
     return tok.type == 'punc' && tok.value == val
   }
   
+  #isIdent() {
+    return this.#peekToken().type == 'ident'
+  }
+  
   #nextToken() {
     const tok = this.#tokens.next()
     if(tok.type == 'cmt') return this.#nextToken()
@@ -259,14 +212,38 @@ export class Parser {
     if (tok.type == 'cmt') return this.#tokens.next() && this.#peekToken()
     return tok
   }
+  
+  forEach(f) {
+    let stmt
+    
+    while ((stmt = this.next()) != null) {
+      f(stmt)
+    }
+  }
 }
 
 function stringify(obj) {
+  if(!obj) return 'end of file'
+  
   if(obj.type == 'punc') return obj.value
+  if(obj.type == 'unknown') return obj.value
+  if(obj.type == 'eof') return obj.value
   
   return JSON.stringify(obj)
 }
 
+function is_error(expr) {
+  return !expr || expr.type == 'err'
+}
+
+function unexpected(token, type, data) {
+  let err = token?.type == 'err'
+    ? token
+    : error(`unexpected token ${stringify(token)}`, token)
+  
+  return { ...data, type, err }
+}
+
 function error(msg, token) {
-  return { type: 'err', msg, start: token.start, end: token.end }
+  return { type: 'err', msg, start: token?.start, end: token?.end }
 }

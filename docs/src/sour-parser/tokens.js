@@ -1,4 +1,4 @@
-const puncs = '{:}[,](<=>)+-*&|.'
+const puncs = '{:}[,](<=>)+-*&|.?'
 
 const isDigit = c => /\d/.test(c)
 const isIdent = c => /[a-zA-Z_]/.test(c)
@@ -77,11 +77,12 @@ export class Tokenizer {
     
     switch (true) {
       case /\s/.test(c)     : return this.#stream.next() && this.#nextTok()
-      case isDigit(c)       : return token('num', this.#readWhile(isDigit), start, this.#stream.pos())
+      case isDigit(c)       : return this.#parseNum(start)
       case isIdent(c)       : return token('ident', this.#readWhile(isIdent), start, this.#stream.pos())
       case c == '/'         : return this.#parseSlash(start)
       case puncs.includes(c): return token('punc', this.#stream.next(), start, this.#stream.pos())
       case c == '"'         : return this.#parseStr(start)
+      case c == "'"         : return this.#parseChar(start)
       case c == EOF         : return token('eof', 'end of file', start, this.#stream.pos())
       default               : return token('unknown', this.#stream.next(), start, this.#stream.pos())
     }
@@ -92,6 +93,15 @@ export class Tokenizer {
     while(predicate(this.#stream.peek()))
       str += this.#stream.next()
     return str
+  }
+  
+  #parseNum(start) {
+    let str = this.#readWhile(isDigit)
+    
+    if(this.#stream.peek() == '.' && isDigit(this.#stream.peek(1)))
+      str += this.#stream.next() + this.#readWhile(isDigit)
+    
+    return token('num', str, start, this.#stream.pos())
   }
   
   #parseSlash(start) {
@@ -126,9 +136,9 @@ export class Tokenizer {
   }
   
   #parseStr(start) {
-    this.#stream.next()
+    this.#stream.next() // skip '"'
     
-    let str = this.#readWhile(c => !(c == '"' || c == '\\' || c == EOF))
+    let str = '"' + this.#readWhile(c => !(c == '"' || c == '\\' || c == EOF))
     
     if (this.#stream.peek() == '\\') {
       this.#stream.next()
@@ -140,7 +150,18 @@ export class Tokenizer {
     }
     
     this.#stream.next()
-    return token('str', str, start, this.#stream.pos())
+    return token('str', str + '"', start, this.#stream.pos())
+  }
+  
+  #parseChar(start) {
+    let str = this.#stream.next()
+    
+    if(this.#stream.peek() == '\\')
+      str += this.#stream.next()
+    
+    str += this.#stream.next() + this.#stream.next()
+    
+    return token('char', str, start, this.#stream.next())
   }
 }
 

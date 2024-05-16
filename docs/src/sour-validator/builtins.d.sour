@@ -1,0 +1,11 @@
+class str
+class bool
+class byte
+class int
+class short
+class long
+class float
+class double
+class char
+
+fun print(...message: any): void

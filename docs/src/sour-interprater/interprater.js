@@ -1,18 +1,23 @@
-// import { Validator } from '../sour-validator/validator.js';
-import { Parser } from '../sour-parser/parser.js';
-import { create } from './builtin.js';
-import { Scope, Class } from './scope.js';
+import { Validator } from '../sour-validator/validator.js';
+import { BUILTIN } from './builtin.js';
+import { BuiltinScope, Char, Float } from './scope.js';
+import { Stream } from './stream.js';
+
+const nums = [ 'byte', 'short', 'int', 'long' ]
 
 export class Interprater {
-  #global
-  #exports = new Scope()
+  #global = new BuiltinScope()
+  // #exports = new Scope()
   #file = 'main.sour'
   #root = '/'
   #imported
   
-  constructor(outputListener) {
-    this.#global = new Scope(create(outputListener))
-    this.#global.toString().then(console.log())
+  stream = new Stream()
+  
+  constructor() {
+    this.#global.define_function('print', (...args) => {
+      this.stream.write(args.map(e=>e+"").join(' '))
+    })
   }
   
   async interprate(root, file, imported = new Map()) {
@@ -24,87 +29,39 @@ export class Interprater {
   }
   
   async interprateCode(code) {
-    const parser = new Parser(code)
+    const validator = new Validator(code)
+    const ast = validator.validate()
+    // console.log(ast)
+    if(ast.errors.length) {
+      ast.errors.map(err => {
+        if(!err.start) {
+          const lines = code.split('\n')
+          return `Error: ${err.msg} at (${code.length - 1}) ${lines.length}:${lines.at(-1).length}`
+        }
+        
+        return `Error: ${err.msg} at (${err.start.index}) ${err.start.line}:${err.start.col}`
+      }).forEach(this.stream.write.bind(this.stream))
+      
+      return
+    }
     
     let stmt
     
-    while ((stmt = parser.next()) != null)
-      await this.#interprateStmt(stmt)
+    this.#interprateBody(ast.body)
   }
   
   async #interprateStmt(stmt, self = this.#global, local = this.#global, isExport = false) {
     if (stmt.type == 'err') this.#error(stmt)
     
-    if (stmt.type == 'var-dec') {
-      const name = stmt.name.value
-      const value = await this.#interprateExpr(stmt.value, self)
+    let value
+    
+    if (stmt.type == 'var') {
+      if(stmt.val) value = this.#interprateExpr(stmt.val)
       
-      self.define(name, value)
-      
-      if(isExport) this.#exports.define(name, value)
+      this.#global.define_variable(stmt.name.value, stmt.val ? value : getDefault(stmt.valType))
     }
     
-    if (stmt.type == 'fun-dec') {
-      const fun = async (...args) => {
-        // console.log(await local?.toString())
-        const scope = new Scope(self)
-        stmt.params.forEach((param, i) => scope.define(param.value, args[i]))
-        return await this.#interprateBody(stmt.body.body, scope, local)
-      }
-      
-       self.define(stmt.name.value, fun)
-    }
-    
-    if (stmt.type == 'cls-dec') {
-      const cls = new Class()
-      
-      cls.instance = async (child, ...args) => {
-        const instance = new Scope()
-        
-        instance.set('this', instance)
-        
-        if(stmt.extends) {
-          const sCls = this.#global.get(stmt.extends.value)
-          const sup = await sCls.instance(instance)
-          instance.parent = sup
-          instance.define('super', sup)
-        }
-        
-        await this.#interprateBody(stmt.body.body, instance, child)
-        
-        if(!child) {
-          const constructor = instance.get('constructor')
-          if(constructor) await constructor(...args)
-        }
-        
-        return instance
-      }
-      
-      cls.toString = () => `[class ${stmt.name.value}]`
-      
-      this.#global.define(stmt.name.value, cls)
-      if(isExport) this.#exports.define(stmt.name.value, cls)
-    }
-    
-    if (stmt.type == 'import') {
-      const path = stmt.path.value
-      
-      let exports
-      
-      if (this.#imported.has(path)) exports = this.#imported.get(path)
-      else {
-        const interprater = new Interprater()
-        await interprater.interprate(this.#root, path.replaceAll('.', '/') + '.sour')
-        exports = interprater.#exports
-        this.#imported.set(path, exports)
-      }
-      
-      stmt.names.forEach(name => this.#global.define(name.value, exports.get(name.value)))
-    }
-    
-    if (stmt.type == 'export') {
-      await this.#interprateStmt(stmt.stmt, this.#global, null, true)
-    }
+    if (stmt.type == 'const') this.#global.define_variable(stmt.name.value, this.#interprateExpr(stmt.val))
     
     await this.#interprateExpr(stmt, self, local)
   }
@@ -117,59 +74,22 @@ export class Interprater {
     }
   }
   
-  async #interprateExpr(expr, self, local) {
+  #interprateExpr(expr) {
     if(expr == null) return
     
-    if(expr.type == 'num') return parseInt(expr.value)
-    if(expr.type == 'str') return expr.value
+    if(expr.type == 'str') return expr.val
+    if(expr.type == 'int') return expr.val
+    if(expr.type == 'float') return new Float(expr.val)
+    if(expr.type == 'double') return new Float(expr.val)
+    if(expr.type == 'char') return new Char(expr.val.charCodeAt(0))
     
     if(expr.type == 'ident') {
-      const name = expr.value
-      
-      if(name == 'super') return self.get(name)
-      
-      // if(name == 'onCreate') console.log(name, await local?.toString())
-      if(local?.has(name)) return local.get(name)
-      if(self?.has(name)) return self.get(name)
-      return this.#global.get(expr.value)
+      return this.#global.get_variable(expr.value)
     }
     
     if(expr.type == 'call') {
-      const fun = await this.#interprateExpr(expr.access, self, local)
-      if(!fun) throw new Error(`function ${str(expr.access)} donot exits as runtime.`)
-      
-      const args = await Promise.all(expr.args.map(arg => this.#interprateExpr(arg, self, local)))
-      
-      if(fun instanceof Scope) {
-        const constructor = fun.get('constructor')
-        if(constructor) await constructor(...args)
-        return
-      }
-      
-      return await fun(...args)
-    }
-    
-    if(expr.type == 'new') {
-      const cls = this.#global.get(expr.call.access.value)
-      const args = await Promise.all(expr.call.args.map(arg => this.#interprateExpr(arg, self, local)))
-      return await cls.instance(null, ...args)
-    }
-    
-    if (expr.type == 'assign') {
-      const value = await this.#interprateExpr(expr.value, self, local)
-      self.set(expr.name.value, value)
-      // console.log(self.parent?.toString())
-    }
-    
-    if (expr.type == 'dot') {
-      var left = await this.#interprateExpr(expr.left, self, local)
-      return await this.#interprateExpr(expr.right, null, left)
-    }
-    
-    if (expr.type == 'ele') {
-      const cls = this.#global.get(expr.name.value)
-      const ins = await cls.instance()
-      return await ins.get("render")()
+      const args = expr.args.map(this.#interprateExpr.bind(this))
+      this.#global.get_function(expr.access.value, expr.index)(...args)
     }
   }
   
@@ -181,4 +101,16 @@ export class Interprater {
 function str(expr) {
   if(expr.type == 'ident') return expr.value
   if(expr.type == 'dot') return `${str(expr.left)}.${str(expr.right)}`
+}
+
+function getDefault(expr) {
+  if(expr.type == 'ident') {
+    if(nums.includes(expr.value)) return 0
+    if(expr.value == 'float') return new Float(0)
+    if(expr.value == 'double') return new Float(0)
+    if(expr.value == 'bool') return false
+    if(expr.value == 'char') return new Char(0)
+  }
+  
+  return null
 }

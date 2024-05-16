@@ -26,8 +26,8 @@
       <ol>
         <li class="in"><a href="hello-world.html">Hello world</a></li>
         <li><a href="basic-types.html">Basic Types</a></li>
-        <li><a href="fun.html">Functions</a></li>
-        <li><a href="cls.html">Classes</a></li>
+        <!-- <li><a href="fun.html">Functions</a></li> -->
+        <!-- <li><a href="cls.html">Classes</a></li> -->
       </ol>
     </nav>
 
@@ -55,12 +55,8 @@
     <p>All programs need to be able to store data, and variables help you to do just that. In Sour, you can declare:</p>
 
     <ul>
-      <li>read-only variables with
-        <code class="miss">const</code>
-      </li>
-      <li>mutable variables with
-        <code>var</code>
-      </li>
+      <li>read-only variables with <code>const</code></li>
+      <li>mutable variables with <code>var</code></li>
     </ul>
 
     <p>To assign a value, use the assignment operator
@@ -69,13 +65,13 @@
 
     For example:
 
-    <code-block>
+    <code-block disable>
       <span slot="name">Variables</span>
 
       <pre slot="code">
-        var popcorn = 5    // there are 5 boxes of popcorn
-        var hotdog = 7     // There are 7 hotdogs
-        var customers = 10 // There are 10 customers in the queue
+        const popcorn = 5    // there are 5 boxes of popcorn
+        const hotdog = 7     // There are 7 hotdogs
+        var customers = 10   // There are 10 customers in the queue
         
         // Some customers leave the queue
         customers = 8
