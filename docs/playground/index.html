@@ -5,12 +5,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sour Playground</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@40,400,1,0" />
 </head>
 
 <body>
-  <textarea id="code" cols="30" rows="10"></textarea>
-  <button id="run">Run</button>
-  <pre id="output">Output ...</pre>
+  <header>
+    <div class="heading">
+      <span class="title">Palyground</span>
+    </div>
+    
+    <span id="run" class="material-symbols-rounded">play_arrow</span>
+  </header>
+  
+  <main>
+    <textarea id="code"></textarea>
+    <pre id="output">Output ...</pre>
+  </main>
   
   <script type="module" src="script.js"></script>
 </body>
