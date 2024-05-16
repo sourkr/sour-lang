@@ -53,8 +53,6 @@ function header() {
   const icon = new Image()
   icon.src = new URL('icon.png', getRoot())
   
-  console.log(new URL('icon.png', getRoot()))
-  
   document.querySelector('.heading').before(icon)
   
   document.querySelector('.subtitle').innerText = version
