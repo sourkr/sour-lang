@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arrays</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@40,400,1,0" />
+</head>
+
+<body>
+  <header>
+    <div class="heading">
+      <span class="subtitle"></span>
+    </div>
+  </header>
+  
+  <main>
+    <h2>Arrays</h2>
+    
+    <nav>
+      <ol>
+        <li class="done"><a href="hello-world.html">Hello world</a></li>
+        <li class="done"><a href="basic-types.html">Basic Types</a></li>
+        <li class="in"><a href="arrays.html">Arrays</a></li>
+        <!-- <li><a href="fun.html">Functions</a></li> -->
+        <!-- <li><a href="cls.html">Classes</a></li> -->
+      </ol>
+    </nav>
+    
+    <p>
+      When programming, it is useful to be able to group data into structures for later processing.
+      Sour lang provides arrys for exactly this purpose.
+    </p>
+    
+    <p>
+      Lists store items in the order that they are added, and allow for duplicate items.
+    </p>
+    
+    <p>
+      to create array put all elements inside of <code>[]</code>.
+    </p>
+    
+    <p>
+      When creating lists, Sour lang can infer the type of items stored.
+      To declare the type explicitly, add the type after <code>:</code> after the array declaration:
+    </p>
+    
+    <code-block>
+      <span slot="name">Arrays</span>
+      <pre slot="code">
+        const shapes = ["triangle", "square", "circle"]
+        const fruits: str[] = ["apple", "banana", "mango"]
+        const colors = ["red", "green", "blue"]: str
+        
+        print(shapes)
+        print(fruits)
+        print(colors)
+      </pre>
+    </code-block>
+  </main>
+  
+  <script type="module" src="../script.js"></script>
+</body>
+
+</html>

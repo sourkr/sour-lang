@@ -1,7 +1,7 @@
 import { Interprater } from './src/sour-interprater/interprater.js';
 
 const tag = /<(?<tag>.*?)>(.*?)<\/\k<tag>>/g
-const version = '0.2 Beta'
+const version = '0.3 Beta'
 
 function lint(code) {
   code.replace(/(\s+)$/, (f, s) => {
@@ -53,7 +53,13 @@ function header() {
   const icon = new Image()
   icon.src = new URL('icon.png', getRoot())
   
-  document.querySelector('.heading').before(icon)
+  const heading = document.querySelector('.heading')
+  heading.before(icon)
+  
+  const title = document.createElement('span')
+  title.classList.add('title')
+  title.innerText = 'Sour Lang'
+  document.querySelector('.subtitle').before(title)
   
   document.querySelector('.subtitle').innerText = version
 }

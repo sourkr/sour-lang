@@ -6,7 +6,7 @@ import { Stream } from './stream.js';
 const nums = [ 'byte', 'short', 'int', 'long' ]
 
 export class Interprater {
-  #global = new BuiltinScope()
+  #global = BUILTIN
   // #exports = new Scope()
   #file = 'main.sour'
   #root = '/'
@@ -16,7 +16,10 @@ export class Interprater {
   
   constructor() {
     this.#global.define_function('print', (...args) => {
-      this.stream.write(args.map(e=>e+"").join(' '))
+      this.stream.write(args.map(e => {
+        if(Array.isArray(e)) return `[${e}]`
+        return e + ""
+      }).join(' '))
     })
   }
   
@@ -53,24 +56,30 @@ export class Interprater {
   #interprateStmt(stmt, self = this.#global, local = this.#global, isExport = false) {
     if (stmt.type == 'err') this.#error(stmt)
     
-    let value
-    
     if (stmt.type == 'var') {
-      if(stmt.val) value = this.#interprateExpr(stmt.val)
+      let value
       
-      this.#global.define_variable(stmt.name.value, stmt.val ? value : getDefault(stmt.valType))
+      if(stmt.val) value = this.#interprateExpr(stmt.val)
+      else value = getDefault(stmt.valType)
+      
+      this.#global.define_variable(stmt.name.value, value)
     }
     
     if (stmt.type == 'const') this.#global.define_variable(stmt.name.value, this.#interprateExpr(stmt.val))
     
+    if (stmt.type == 'if') {
+      if(this.#interprateExpr(stmt.condition)) this.#interprateBody(stmt.body)
+      else this.#interprateBody(stmt.elseBody)
+    }
+    
     this.#interprateExpr(stmt, self, local)
   }
   
-  #interprateBody(body, self, local) {
+  #interprateBody(body) {
     for(let stmt of body) {
       if(stmt.type == 'return') return this.#interprateExpr(stmt.value, self)
       
-      this.#interprateStmt(stmt, self, local)
+      this.#interprateStmt(stmt)
     }
   }
   
@@ -84,16 +93,43 @@ export class Interprater {
     if(expr.type == 'char') return new Char(expr.val.charCodeAt(0))
     
     if(expr.type == 'ident') {
-      return this.#global.get_variable(expr.value)
+      const name = expr.value
+      
+      switch (name) {
+        case 'true': return true
+        case 'false': return false
+      }
+      
+      return this.#global.get_variable(name)
     }
     
     if(expr.type == 'call') {
       const args = expr.args.map(this.#interprateExpr.bind(this))
+      
+      if(expr.access.type == 'dot') {
+        const left = this.#interprateExpr(expr.access.left)
+        return left.class.methods.get(expr.access.right.value)[expr.index](left, ...args)
+      }
+      
       this.#global.get_function(expr.access.value, expr.index)(...args)
     }
     
     if(expr.type == 'assign') {
       this.#global.set_variable(expr.name.value, this.#interprateExpr(expr.val))
+    }
+    
+    if (expr.type == 'array') {
+      const array = expr.values.map(this.#interprateExpr.bind(this))
+      const cls = this.#global.classes.get('array')
+      const instance = cls.instance()
+      
+      cls.methods.get('constructor')[0](instance, array)
+      return instance
+    }
+    
+    if (expr.type == 'dot') {
+      const left = this.#interprateExpr(expr.left)
+      return left.constants.get(expr.right.value)
     }
   }
   
@@ -108,12 +144,14 @@ function str(expr) {
 }
 
 function getDefault(expr) {
-  if(expr.type == 'ident') {
-    if(nums.includes(expr.value)) return 0
-    if(expr.value == 'float') return new Float(0)
-    if(expr.value == 'double') return new Float(0)
-    if(expr.value == 'bool') return false
-    if(expr.value == 'char') return new Char(0)
+  if(expr.type == 'instance') {
+    const name = expr.name.value
+    
+    if(nums.includes(name)) return 0
+    if(name == 'float') return new Float(0)
+    if(name == 'double') return new Float(0)
+    if(name == 'bool') return false
+    if(name == 'char') return new Char(0)
   }
   
   return null

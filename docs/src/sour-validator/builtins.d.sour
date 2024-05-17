@@ -1,11 +1,18 @@
-class str
-class bool
-class byte
-class int
-class short
-class long
-class float
-class double
-class char
+class str {}
+class bool {}
+class byte {}
+class int {}
+class short {}
+class long {}
+class float {}
+class double {}
+class char {}
+
+class array<T> {
+  const len: int
+  
+  fun at(index: int): T
+  fun at(index: int, value: T): void
+}
 
 fun print(...message: any): void

@@ -16,6 +16,10 @@ export class Parser {
       case this.#isKeyword('var'): return this.#parseVar()
       case this.#isKeyword('const'): return this.#parseConst()
       
+      case this.#isKeyword('if'): return this.#parseIf()
+      case this.#isKeyword('while'): return this.#parseWhile()
+      case this.#isKeyword('for'): return this.#parseFor()
+      
       default: return this.#parseExpr()
     }
   }
@@ -33,7 +37,7 @@ export class Parser {
       
       case 'cmt': return this.#parseStmt(this.#nextToken())
       
-      // case 'punc': return this.#mayDot(this.#parsePunc())
+      case 'punc': return this.#parsePunc()
       
       default: return error(`unexpected token ${this.#peekToken().value}`, this.#nextToken())
     }
@@ -52,8 +56,7 @@ export class Parser {
     if(this.#isPunc(':')) {
       this.#nextToken() // skip ':'
     
-      if(!this.#isIdent()) return unexpected(this.#nextToken(), 'var', { name })
-      valType = this.#nextToken()
+      valType = this.#parseType()
     }
     
     if(this.#isPunc('=')) {
@@ -78,8 +81,7 @@ export class Parser {
     if (this.#isPunc(':')) {
       this.#nextToken() // skip ':'
     
-      if (!this.#isIdent()) return unexpected(this.#nextToken(), 'var', { name })
-      valType = this.#nextToken()
+      valType = this.#parseType()
     }
     
     if(!this.#isPunc('=')) return unexpected(this.#nextToken(), 'const', { name, valType })
@@ -91,6 +93,91 @@ export class Parser {
     return { type: 'const', name, valType, value }
   }
   
+  #parseIf() {
+    this.#skip() // 'if'
+    
+    if(!this.#isPunc('(')) return new unexpected(this.#nextToken(), 'if', {})
+    this.#skip()
+    
+    const condition = this.#parseExpr()
+    
+    if(!this.#isPunc(')')) return new unexpected(this.#nextToken(), 'if', { condition })
+    this.#skip()
+    
+    const body = this.#parseBody()
+    
+    let elseBody = []
+    
+    if(this.#isKeyword('else')) {
+      this.#skip() // 'else'
+      
+      elseBody = this.#parseBody()
+    }
+    
+    return { type: 'if', condition, body, elseBody }
+  }
+  
+  #parseWhile() {
+    this.#skip() // 'while'
+    
+    if (!this.#isPunc('(')) return new unexpected(this.#nextToken(), 'while', {})
+    this.#skip()
+    
+    const condition = this.#parseExpr()
+    
+    if (!this.#isPunc(')')) return new unexpected(this.#nextToken(), 'while', { condition })
+    this.#skip()
+    
+    const body = this.#parseBody()
+    
+    return { type: 'while', condition, body }
+  }
+  
+  #parseFor() {
+    this.#skip() // 'for'
+    
+    if (!this.#isPunc('(')) return new unexpected(this.#nextToken(), 'for', {})
+    this.#skip()
+    
+    const initialisation = this.#parseStmt()
+    
+    if (!this.#isPunc(';')) return new unexpected(this.#nextToken(), 'for', { initialisation })
+    this.#skip()
+    
+    const condition = this.#parseExpr()
+    
+    if (!this.#isPunc(';')) return new unexpected(this.#nextToken(), 'for', { initialisation, condition })
+    this.#skip()
+    
+    const incrementation = this.#parseExpr()
+    
+    if (!this.#isPunc(')')) return new unexpected(this.#nextToken(), 'for', { initialisation, condition, incrementation })
+    this.#skip()
+    
+    return { type: 'for', initialisation, condition, incrementation }
+  }
+  
+  
+  #parseBody() {
+    const body = []
+    
+    if(this.#isPunc('{')) {
+      this.#skip() // '{'
+      
+      while (true) {
+        if(this.#isPunc('}')) {
+          this.#skip() // '}'
+        }
+        
+        const stmt = this.#parseStmt()
+        if(is_error(stmt)) return [ stmt ]
+        body.push(stmt)
+      }
+    } else body.push(this.#parseStmt())
+    
+    return body
+  }
+  
   
   // expr
   #parseIdent() {
@@ -99,14 +186,15 @@ export class Parser {
     switch (true) {
       case this.#isPunc('('): return this.#parseCall(ident)
       case this.#isPunc('='): return this.#parseAssign(ident)
-      default: return ident
+      default: return this.#mayDot(ident)
     }
   }
   
   #parsePunc() {
     switch (true) {
       case this.#isPunc('<'): return this.#parseEle()
-      default: return error(`unexpected token ${stringify(token)}`, token - 1)
+      case this.#isPunc('['): return this.#parseArray()
+      default: return error(`unexpected token ${stringify(this.#peekToken())}`, this.#nextToken())
     }
   }
   
@@ -178,16 +266,75 @@ export class Parser {
   #mayDot(left) {
     if(!this.#isPunc('.')) return left
     
-    this.#nextToken() // skip .
+    this.#skip() // skip .
+    
+    if(!this.#isIdent()) return unexpected(this.#nextToken(), 'dot', { left })
     const right = this.#nextToken()
+    
     return this.#mayCall(this.#mayDot({ type: 'dot', left, right }))
   }
+  
+  #parseArray() {
+    this.#skip() // skip '['
+    
+    const values = []
+    
+    let sClose
+    
+    if(this.#isPunc(']')) sClose = this.#nextToken()
+    
+    while (!sClose) {
+      values.push(this.#parseExpr())
+      
+      if(this.#isPunc(']')) {
+        sClose = this.#nextToken()
+        break
+      }
+      
+      if(!this.#isPunc(',')) return unexpected(this.#nextToken(), 'array', { values, valType })
+      this.#skip() // ','
+    }
+    
+    let valType
+    
+    if(this.#isPunc(':')) {
+      this.#skip() // ':'
+      valType = this.#parseType()
+    }
+    
+    return { type: 'array', values,valType }
+  }
+  
+  // type
+  #parseType() {
+    if(!this.#isIdent())
+      return unexpected(this.#nextToken(), 'instance', {})
+    const name = this.#nextToken()
+    
+    return this.#mayArrayType({ type: 'instance', name })
+  }
+  
+  #mayArrayType(type) {
+    if (this.#isPunc('[')) return this.#parseArrayType(type)
+    return type
+  }
+  
+  #parseArrayType(typ) {
+    this.#nextToken() // skip '['
+    
+    if (!this.#isPunc(']')) return unexpected(this.#nextToken(), 'array', { name })
+    this.#nextToken() // skip ']'
+    
+    return { type: 'array', typ }
+  }
+  
   
   // util
   #isKeyword(name) {
     const tok = this.#peekToken()
     return tok.type == 'ident' && tok.value == name
   }
+  
   
   #isPunc(val) {
     const tok = this.#peekToken()
@@ -210,6 +357,10 @@ export class Parser {
     return tok
   }
   
+  #skip() {
+    this.#nextToken()
+  }
+  
   forEach(f) {
     let stmt
     
@@ -222,6 +373,7 @@ export class Parser {
 function stringify(obj) {
   if(!obj) return 'end of file'
   
+  if(obj.type == 'ident') return obj.value
   if(obj.type == 'punc') return obj.value
   if(obj.type == 'unknown') return obj.value
   if(obj.type == 'eof') return obj.value

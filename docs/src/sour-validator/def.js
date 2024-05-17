@@ -1,5 +1,5 @@
 import { DefinationParser } from '../sour-parser/def-parser.js';
-import { BuiltinScope, ParamType, ParamList, ClassType, InstanceType, ANY, VOID } from './types.js';
+import { BuiltinScope, ParamType, ParamList, ClassType, InstanceType, GenricType, ANY, VOID } from './types.js';
 
 export class DefinationValidator {
   #global = new BuiltinScope()
@@ -19,7 +19,7 @@ export class DefinationValidator {
   }
   
   #checkStmt(stmt) {
-    if(stmt.type == 'fun-dec') {
+    if(stmt.type == 'fun') {
       const name = stmt.name.value
       
       const params = new ParamList(stmt.params.map(param => {
@@ -35,17 +35,50 @@ export class DefinationValidator {
     }
     
     if(stmt.type == 'cls-dec') {
-      const name = stmt.name.value
+      const name = stmt.name.name.value
+      const generic = stmt.name.generic.map(ident => ident.value)
       
-      this.#global.define_class(name, new ClassType(name))
+      const cls = new ClassType(name, generic)
+      
+      stmt.body.forEach(stmt => {
+        if (stmt.type == 'var') {
+          cls.constants.set(stmt.name.value, this.#checkType(stmt.value))
+        }
+        
+        if(stmt.type == 'var') {
+          cls.variables.set(stmt.name.value, this.#checkType(stmt.value))
+        }
+        
+        if (stmt.type == 'fun') {
+          const name = stmt.name.value
+        
+          const params = new ParamList(stmt.params.map(param => {
+            const type = new ParamType(param.name.value, this.#checkType(param.type, generic))
+            type.isOptional = param.isOptional
+            type.isSpreaded = param.isSpreaded
+            return type
+          }))
+        
+          const ret = this.#checkType(stmt.ret, generic)
+        
+          cls.define_method(name, params, ret)
+        }
+      })
+      
+      this.#global.define_class(name, cls)
     }
   }
   
-  #checkType(expr) {
-    if(expr.type = 'ident') {
-      if(expr.value == 'any') return ANY
-      if(expr.value == 'void') return VOID
-      return new InstanceType(this.#global.get_class(expr.value))
+  #checkType(expr, generic) {
+    if (expr.type = 'instance') {
+      const name = expr.name.value
+      
+      if(name == 'any') return ANY
+      if(name == 'void') return VOID
+      if(!this.#global.has_class(name))
+        if(generic.includes(name))
+          return new GenricType(name)
+      return new InstanceType(this.#global.get_class(name))
     }
   }
 }

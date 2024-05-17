@@ -56,9 +56,32 @@ export class Scope {
   }
 }
 
+
 export class Class {
-  interprate() {}
+  methods = new Map()
+  
+  instance() {
+    return new Instance(this)
+  }
+  
+  define_method(name, fun) {
+    if (!this.methods.has(name)) this.methods.set(name, [])
+    this.methods.get(name).push(fun)
+  }
 }
+
+export class Instance {
+  constants = new Map()
+  
+  constructor(cls) {
+    this.class = cls
+  }
+  
+  toString() {
+    return this.class.methods.get('str')[0](this)
+  }
+}
+
 
 export class BuiltinScope {
   /** @type { Map<String, any> } */
@@ -66,6 +89,8 @@ export class BuiltinScope {
   
   /** @type { Map<String, ((...args: any[]) => any)[]> } */
   functions = new Map()
+  
+  classes = new Map()
   
   /**
    * @param name { string }

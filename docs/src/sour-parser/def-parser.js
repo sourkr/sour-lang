@@ -13,7 +13,8 @@ export class DefinationParser {
   
   #parseStmt() {
     switch(true) {
-      // case this.#isKeyword('var'): return this.#parseVar()
+      case this.#isKeyword('const'): return this.#parseVar()
+      case this.#isKeyword('var'): return this.#parseVar()
       case this.#isKeyword('fun'): return this.#parseFun()
       case this.#isKeyword('class'): return this.#parseClass()
       // case this.#isKeyword('export'): return this.#parseExport()
@@ -45,13 +46,23 @@ export class DefinationParser {
   
   // stmt
   #parseVar() {
-    const keyword = this.#nextToken()
-    const name    = this.#nextToken()
-    const equal   = this.#nextToken()
-    const value   = this.#parseExpr()
+    this.#skip() // 'var'
+    const name = this.#nextToken()
+    this.#skip() // ':'
+    const value = this.#parseType()
     
-    return { type: 'var-dec', keyword, name, equal, value }
+    return { type: 'var', name, value }
   }
+  
+  #parseConst() {
+    this.#skip() // 'const'
+    const name = this.#nextToken()
+    this.#skip() // ':'
+    const value = this.#parseType()
+    
+    return { type: 'const', name, value }
+  }
+  
   
   #parseFun() {
     this.#nextToken()
@@ -77,14 +88,15 @@ export class DefinationParser {
     
     this.#nextToken() // skip ':'
     
-    const ret = this.#nextToken()
+    const ret = this.#parseType()
     
-    return { type: 'fun-dec', name, params, ret }
+    return { type: 'fun', name, params, ret }
   }
   
   #parseClass() {
     const keyword = this.#nextToken()
-    const name = this.#nextToken()
+    const name = this.#parseName()
+    
     // var extend
     
     // if(this.#isKeyword('extends')) {
@@ -92,44 +104,9 @@ export class DefinationParser {
     //   extend = this.#nextToken()
     // }
     
-    // const body = this.#parseBody()
+    const body = this.#parseBody()
     
-    return { type: 'cls-dec', name }
-  }
-  
-  #parseExport() {
-    this.#nextToken()
-    
-    return { type: 'export', stmt: this.#parseStmt() }
-  }
-  
-  #parseImport() {
-    this.#nextToken() // skip import
-    this.#nextToken() // skip {
-    
-    const names = []
-    
-    let cClose
-    
-    if(this.#isPunc('}')) cClose = this.#nextToken()
-    
-    
-    while(!cClose) {
-      names.push(this.#nextToken())
-      
-      if (this.#isPunc('}')) {
-        cClose = this.#nextToken()
-        break
-      }
-      
-      this.#nextToken() // skip ','
-    }
-    
-    this.#nextToken() // skip 'form'
-    
-    const path = this.#nextToken()
-    
-    return { type: 'import', names, path }
+    return { type: 'cls-dec', name, body }
   }
   
   #parseReturn() {
@@ -158,25 +135,25 @@ export class DefinationParser {
     }
     
     this.#nextToken() // skip ':'
-    const type = this.#nextToken()
+    const type = this.#parseType()
     
     return { name, type, isOptional, isSpreaded }
   }
   
   #parseBody() {
-    const cOpen  = this.#nextToken()
-    const body   = []
+    this.#skip() // '{'
+    const body = []
     
     while (true) {
       if (this.#isPunc('}')) {
-        const cClose = this.#nextToken()
-        return { type: "body", cOpen, cClose, body }
+        this.#skip() // '}'
+        return body
       }
       
-      const stmt = this.#parseStmt()
-      body.push(stmt)
+      body.push(this.#parseStmt())
     }
   }
+  
   
   // expr
   #parseIdent() {
@@ -252,6 +229,32 @@ export class DefinationParser {
     return { type: 'assign', name, value }
   }
   
+  #parseName() {
+    const name = this.#nextToken()
+    let generic = []
+    
+    if(this.#isPunc('<')) {
+      this.#skip() // '<'
+      
+      let cClose
+      
+      if (this.#isPunc('>')) cClose = this.#nextToken()
+      
+      while (!cClose) {
+        generic.push(this.#nextToken())
+        
+        if (this.#isPunc('>')) {
+          cClose = this.#nextToken()
+          break
+        }
+        
+        this.#skip() // ','
+      }
+    }
+    
+    return { name, generic }
+  }
+  
   #mayDot(left) {
     if(!this.#isPunc('.')) return left
     
@@ -259,6 +262,27 @@ export class DefinationParser {
     const right = this.#nextToken()
     return this.#mayCall(this.#mayDot({ type: 'dot', left, right }))
   }
+  
+  
+  // type
+  #parseType() {
+    const name = this.#nextToken()
+    
+    return this.#mayArrayType({ type: 'instance', name })
+  }
+  
+  #mayArrayType(type) {
+    if (this.#isPunc('[')) return this.#parseArrayType(type)
+    return type
+  }
+  
+  #parseArrayType(typ) {
+    this.#skip() // skip '['
+    this.#skip() // skip ']'
+  
+    return { type: 'array', typ }
+  }
+  
   
   // util
   #isKeyword(name) {
@@ -269,6 +293,10 @@ export class DefinationParser {
   #isPunc(val) {
     const tok = this.#peekToken()
     return tok.type == 'punc' && tok.value == val
+  }
+  
+  #isIdent() {
+    return this.#peekToken().type == 'ident'
   }
   
   #nextToken() {
@@ -282,6 +310,11 @@ export class DefinationParser {
     if (tok.type == 'cmt') return this.#tokens.next() && this.#peekToken()
     return tok
   }
+  
+  #skip() {
+    this.#nextToken()
+  }
+  
   
   forEach(f) {
     let stmt

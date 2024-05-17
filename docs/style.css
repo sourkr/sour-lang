@@ -269,6 +269,10 @@ pre {
   font-family: "Fira Code", monospace;
 }
 
+pre::-webkit-scrollbar {
+  display: none;
+}
+
 pre[slot=code] {
   margin: 0;
   border: none;
