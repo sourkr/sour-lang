@@ -4,7 +4,7 @@ export class Stream {
   
   read() {
     return new Promise(resolve => {
-      if (this.#stack.length) resolve(this.#stack.pop())
+      if (this.#stack.length) resolve(this.#stack.shift())
       else this.#read = resolve
     })
   }
