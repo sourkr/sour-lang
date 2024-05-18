@@ -8,9 +8,19 @@ main {
   padding: 0;
   flex-direction: column;
   height: calc(100vh - 60px);
+  gap: 10px;
 }
 
 textarea {
   flex: 1;
   resize: none;
+  border: 1px solid hsla(50, 100%, 33%, .3);
+  border-radius: 10px;
+  padding: 10px;
+  outline: none;
+}
+
+pre {
+  flex: 1;
+  margin: 0;
 }
