@@ -1,6 +1,8 @@
-textarea {
-  border: none;
-  box-sizing: border-box;
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap');
+
+header {
+  /* background: hsl(50, 50%, 90%);*/
+  background: transparent;
 }
 
 main {
@@ -9,18 +11,21 @@ main {
   flex-direction: column;
   height: calc(100vh - 60px);
   gap: 10px;
+  background: hsl(50, 50%, 90%);
 }
 
-textarea {
+sour-editor {
   flex: 1;
-  resize: none;
-  border: 1px solid hsla(50, 100%, 33%, .3);
+  background: white;
+  padding-top: 10px;
   border-radius: 10px;
-  padding: 10px;
-  outline: none;
+  box-shadow: 0 0 5px lightgray;
+  font-family: "Fira Code", monospace;
 }
 
-pre {
+#output {
   flex: 1;
   margin: 0;
+  border: none;
+  box-shadow: 0 0 5px lightgray;
 }

@@ -134,6 +134,7 @@ button {
   padding: 10px 20px;
   font-size: 1.2em;
   border-radius: 30px;
+  margin-block: 10px;
 }
 
 button a {

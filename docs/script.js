@@ -59,9 +59,12 @@ function header() {
   const title = document.createElement('span')
   title.classList.add('title')
   title.innerText = 'Sour Lang'
-  document.querySelector('.subtitle').before(title)
   
-  document.querySelector('.subtitle').innerText = version
+  const subtitle = document.createElement('span')
+  subtitle.classList.add('subtitle')
+  subtitle.innerText = version
+  
+  heading.append(title, subtitle)
 }
 
 function getRoot() {

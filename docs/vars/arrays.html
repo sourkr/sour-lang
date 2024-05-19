@@ -14,9 +14,7 @@
 
 <body>
   <header>
-    <div class="heading">
-      <span class="subtitle"></span>
-    </div>
+    <div class="heading"></div>
   </header>
   
   <main>
@@ -60,6 +58,40 @@
         print(shapes)
         print(fruits)
         print(colors)
+      </pre>
+    </code-block>
+    
+    <p>Arrays are ordered so to access an item in an array, use the <code>.at(int)</code> method:</p>
+    
+    <code-block>
+      <span slot="name">Arrays</span>
+      <pre slot="code">
+        const shapes = ["triangle", "square", "circle"]
+        
+        print(shapes.at(0))
+        print(shapes.at(1))
+        print(shapes.at(2))
+      </pre>
+    </code-block>
+    
+    <p>To change value of an item in an array use <code>.at(int, T)</code>:</p>
+    
+    <code-block>
+      <span slot="name">Arrays</span>
+      <pre slot="code">
+        const shapes = ["triangle", "square", "circle"]
+        shapes.at(0, "rectangle")
+        print(shapes)
+      </pre>
+    </code-block>
+    
+    <p>To get the number of items in an array, use the <code>.len</code> field:</p>
+    
+    <code-block>
+      <span slot="name">Arrays</span>
+      <pre slot="code">
+        const shapes = ["triangle", "square", "circle"]
+        print(shapes.len)
       </pre>
     </code-block>
   </main>
