@@ -5,6 +5,7 @@ import { Stream } from './stream.js';
 
 const nums = [ 'byte', 'short', 'int', 'long' ]
 
+
 export class Interprater {
   #global = BUILTIN
   // #exports = new Scope()
@@ -15,7 +16,7 @@ export class Interprater {
   stream = new Stream()
   
   constructor() {
-    this.#global.define_function('print', (...args) => {
+    this.#global.define_function('print', '(...any)', (...args) => {
       this.stream.write(args.map(e => {
         if(Array.isArray(e)) return `[${e}]`
         return e + ""
@@ -53,7 +54,7 @@ export class Interprater {
     this.#interprateBody(ast.body)
   }
   
-  #interprateStmt(stmt, self = this.#global, local = this.#global, isExport = false) {
+  #interprateStmt(stmt) {
     if (stmt.type == 'err') this.#error(stmt)
     
     if (stmt.type == 'var') {
@@ -68,11 +69,36 @@ export class Interprater {
     if (stmt.type == 'const') this.#global.define_variable(stmt.name.value, this.#interprateExpr(stmt.val))
     
     if (stmt.type == 'if') {
-      if(this.#interprateExpr(stmt.condition)) this.#interprateBody(stmt.body)
+      if(this.#interprateExpr(stmt.condition).value) this.#interprateBody(stmt.body)
       else this.#interprateBody(stmt.elseBody)
     }
     
-    this.#interprateExpr(stmt, self, local)
+    if (stmt.type == 'while') {
+      while (this.#interprateExpr(stmt.condition).value)
+        this.#interprateBody(stmt.body)
+    }
+    
+    if (stmt.type == 'for') {
+      this.#interprateStmt(stmt.initialisation)
+      
+      let i = 0
+          
+      while (this.#interprateExpr(stmt.condition).value) {
+        this.#interprateBody(stmt.body)
+        this.#interprateExpr(stmt.incrementation)
+        i++
+        
+        if(i >= 20) return
+      }
+    }
+    
+    if (stmt.type == 'fun') {
+      this.#global.define_function(stmt.name.value, stmt.params, (...args) => {
+        this.#interprateBody(stmt.body)
+      })
+    }
+    
+    this.#interprateExpr(stmt)
   }
   
   #interprateBody(body) {
@@ -86,8 +112,14 @@ export class Interprater {
   #interprateExpr(expr) {
     if(expr == null) return
     
-    if(expr.type == 'str') return expr.val
-    if(expr.type == 'int') return expr.val
+    if(expr.type == 'int' || expr.type == 'str') {
+      const cls = this.#global.classes.get(expr.type)
+      const instance = cls.instance()
+      
+      instance.get_method('constructor', '')(instance, expr.val)
+      return instance
+    }
+    
     if(expr.type == 'float') return new Float(expr.val)
     if(expr.type == 'double') return new Float(expr.val)
     if(expr.type == 'char') return new Char(expr.val.charCodeAt(0))
@@ -111,7 +143,7 @@ export class Interprater {
         return left.class.methods.get(expr.access.right.value)[expr.index](left, ...args)
       }
       
-      this.#global.get_function(expr.access.value, expr.index)(...args)
+      this.#global.get_function(expr.access.value, expr.params)(...args)
     }
     
     if(expr.type == 'assign') {
@@ -123,13 +155,30 @@ export class Interprater {
       const cls = this.#global.classes.get('array')
       const instance = cls.instance()
       
-      cls.methods.get('constructor')[0](instance, array)
+      instance.get_method('constructor', '')(instance, array)
       return instance
     }
     
     if (expr.type == 'dot') {
       const left = this.#interprateExpr(expr.left)
       return left.constants.get(expr.right.value)
+    }
+    
+    if (expr.type == 'op') {
+      const left = this.#interprateExpr(expr.left)
+      const right = this.#interprateExpr(expr.right)
+      const result = left.get_method(expr.name, expr.params)(left, right)
+      
+      if (expr.isEquals) {
+        if('<>'.includes(expr.operator.value)) {
+          if(result.value) return result
+          return left.get_method('equals', expr.eqParams)(left, right)
+        }
+        
+        this.#global.set_variable(expr.left.value, result)
+      }
+      
+      return result
     }
   }
   

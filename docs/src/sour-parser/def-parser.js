@@ -13,13 +13,13 @@ export class DefinationParser {
   
   #parseStmt() {
     switch(true) {
-      case this.#isKeyword('const'): return this.#parseVar()
+      case this.#isKeyword('const'): return this.#parseConst()
       case this.#isKeyword('var'): return this.#parseVar()
       case this.#isKeyword('fun'): return this.#parseFun()
       case this.#isKeyword('class'): return this.#parseClass()
+      case this.#isKeyword('static'): return { type: 'static', stmt: this.#parseStmt()}
       // case this.#isKeyword('export'): return this.#parseExport()
       // case this.#isKeyword('import'): return this.#parseImport()
-      // case this.#isKeyword('return'): return this.#parseReturn()
       
       // default: return this.#parseExpr()
     }
@@ -106,7 +106,7 @@ export class DefinationParser {
     
     const body = this.#parseBody()
     
-    return { type: 'cls-dec', name, body }
+    return { type: 'class', name, body }
   }
   
   #parseReturn() {

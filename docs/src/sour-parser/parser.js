@@ -1,5 +1,8 @@
 import { Tokenizer } from './tokens.js';
 
+const arithmeric = '+-*/'
+const single = '<>'
+
 export class Parser {
   #tokens
     
@@ -15,6 +18,7 @@ export class Parser {
     switch(true) {
       case this.#isKeyword('var'): return this.#parseVar()
       case this.#isKeyword('const'): return this.#parseConst()
+      case this.#isKeyword('fun'): return this.#parseFun()
       
       case this.#isKeyword('if'): return this.#parseIf()
       case this.#isKeyword('while'): return this.#parseWhile()
@@ -30,7 +34,7 @@ export class Parser {
       
       case 'num' :
       case 'str' :
-        return this.#nextToken()
+        return this.#mayOp(this.#nextToken())
       
       case 'eof': return null
       case 'err': return this.#nextToken()
@@ -42,6 +46,7 @@ export class Parser {
       default: return error(`unexpected token ${this.#peekToken().value}`, this.#nextToken())
     }
   }
+  
   
   // stmt
   #parseVar() {
@@ -91,6 +96,18 @@ export class Parser {
     if (is_error(value)) return unexpected(value, 'const', { name, valType })
     
     return { type: 'const', name, valType, value }
+  }
+  
+  #parseFun() {
+    this.#skip() // 'fun'
+    
+    const name = this.#nextToken()
+    const params = this.#parseParams()
+    this.#skip() // ':'
+    const ret = this.#parseType()
+    const body = this.#parseBlock()
+    
+    return { type: 'fun', name, body, ret }
   }
   
   #parseIf() {
@@ -154,26 +171,60 @@ export class Parser {
     if (!this.#isPunc(')')) return new unexpected(this.#nextToken(), 'for', { initialisation, condition, incrementation })
     this.#skip()
     
-    return { type: 'for', initialisation, condition, incrementation }
+    const body = this.#parseBody()
+    
+    return { type: 'for', initialisation, condition, incrementation, body }
   }
   
+  #parseParams() {
+    this.#skip() // '('
+    
+    const params = []
+    
+    if(this.#isPunc(')')) {
+      this.#skip() // ')'
+      return params
+    }
+    
+    while (true) {
+      const name = this.#nextToken()
+      this.#skip() // ':'
+      const type = this.#parseType()
+      
+      params.push({ name, type })
+      
+      if(this.#isPunc(')')) {
+        this.#skip() // ')'
+        return params
+      }
+      
+      this.#skip() // ','
+    }
+  }
   
   #parseBody() {
     const body = []
     
-    if(this.#isPunc('{')) {
-      this.#skip() // '{'
+    if(!this.#isPunc('{')) return body.push(this.#parseStmt())
+    
+    return this.#parseBlock()
+  }
+  
+  #parseBlock() {
+    const body = []
+    
+    this.#skip() // '{'
       
-      while (true) {
-        if(this.#isPunc('}')) {
-          this.#skip() // '}'
-        }
-        
-        const stmt = this.#parseStmt()
-        if(is_error(stmt)) return [ stmt ]
-        body.push(stmt)
+    while (true) {
+      if(this.#isPunc('}')) {
+        this.#skip() // '}'
+        break
       }
-    } else body.push(this.#parseStmt())
+      
+      const stmt = this.#parseStmt()
+      body.push(stmt)
+      if(is_error(stmt)) return body
+    }
     
     return body
   }
@@ -186,7 +237,7 @@ export class Parser {
     switch (true) {
       case this.#isPunc('('): return this.#parseCall(ident)
       case this.#isPunc('='): return this.#parseAssign(ident)
-      default: return this.#mayDot(ident)
+      default: return this.#mayEqOp(this.#mayDot(ident))
     }
   }
   
@@ -256,7 +307,14 @@ export class Parser {
   }
   
   #parseAssign(name) {
-    this.#nextToken() // skip =
+    this.#skip() // '='
+    
+    if(this.#isPunc('=')) {
+      const operator = this.#nextToken()
+      const right = this.#parseExpr()
+      
+      return { type: 'op', left: name, right, operator }
+    }
     
     const value = this.#parseExpr()
     
@@ -305,6 +363,86 @@ export class Parser {
     return { type: 'array', values,valType }
   }
   
+  #mayOp(left) {
+    if (!this.#isPunc()) return left
+    
+    const operator = this.#peekToken()
+    
+    if (arithmeric.includes(operator.value)) {
+      this.#skip()
+    
+      if (this.#isPunc('=')) {
+        this.#skip()
+        
+        const right = this.#parseExpr()
+        
+        return { type: 'op', left, right, operator, isEquals: true }
+      }
+      
+      const right = this.#parseExpr()
+      
+      return { type: 'op', left, right, operator }
+    }
+    
+    if (single.includes(operator.value)) {
+      this.#skip()
+    
+      if (this.#isPunc('=')) {
+        this.#skip()
+    
+        const right = this.#parseExpr()
+    
+        return { type: 'op', left, right, operator, isEquals: true }
+      }
+    
+      const right = this.#parseExpr()
+    
+      return { type: 'op', left, right, operator }
+    }
+    
+    return left
+  }
+  
+  #mayEqOp(left) {
+    if(!this.#isPunc()) return left
+    
+    const operator = this.#peekToken()
+    
+    if(arithmeric.includes(operator.value)) {
+      this.#skip()
+      
+      if(this.#isPunc('=')) {
+        this.#skip()
+        
+        const right = this.#parseExpr()
+        
+        return { type: 'op', left, right, operator, isEquals: true }
+      }
+      
+      const right = this.#parseExpr()
+      
+      return { type: 'op', left, right, operator }
+    }
+    
+    if(single.includes(operator.value)) {
+      this.#skip()
+      
+      if (this.#isPunc('=')) {
+        this.#skip()
+        
+        const right = this.#parseExpr()
+        
+        return { type: 'op', left, right, operator, isEquals: true }
+      }
+      
+      const right = this.#parseExpr()
+      
+      return { type: 'op', left, right, operator }
+    }
+    
+    return left
+  }
+  
   // type
   #parseType() {
     if(!this.#isIdent())
@@ -338,6 +476,7 @@ export class Parser {
   
   #isPunc(val) {
     const tok = this.#peekToken()
+    if(!val) return tok.type == 'punc'
     return tok.type == 'punc' && tok.value == val
   }
   
@@ -395,4 +534,8 @@ function unexpected(token, type, data) {
 
 function error(msg, token) {
   return { type: 'err', msg, start: token?.start, end: token?.end }
+}
+
+function operator(left, right, isEquals, ...ops) {
+  
 }

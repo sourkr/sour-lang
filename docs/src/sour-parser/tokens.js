@@ -1,4 +1,4 @@
-const puncs = '{:}[,](<=>)+-*&|.?'
+const puncs = '{:}[,](<=>)+-*&|.?;'
 
 const isDigit = c => /\d/.test(c)
 const isIdent = c => /[a-zA-Z_]/.test(c)
@@ -146,7 +146,8 @@ export class Tokenizer {
     }
     
     if (this.#stream.peek() == EOF) {
-      return error(`cannot find end of string`, this.#stream.pos())
+      const err = error(`cannot find end of string`, this.#stream.pos())
+      return token('str', str, start, this.#stream.pos(), err)
     }
     
     this.#stream.next()
@@ -174,6 +175,6 @@ function error(msg, pos) {
   }
 }
 
-function token(type, value, start, end) {
-  return { type, value, start, end } 
+function token(type, value, start, end, err) {
+  return { type, value, start, end, err } 
 }

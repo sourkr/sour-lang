@@ -64,9 +64,9 @@ export class Class {
     return new Instance(this)
   }
   
-  define_method(name, fun) {
-    if (!this.methods.has(name)) this.methods.set(name, [])
-    this.methods.get(name).push(fun)
+  define_method(name, params, fun) {
+    if (!this.methods.has(name)) this.methods.set(name, new Map())
+    this.methods.get(name).set(params, fun)
   }
 }
 
@@ -77,8 +77,12 @@ export class Instance {
     this.class = cls
   }
   
+  get_method(name, params) {
+    return this.class.methods.get(name).get(params)
+  }
+  
   toString() {
-    return this.class.methods.get('str')[0](this)
+    return this.get_method('str', '()')(this)
   }
 }
 
@@ -116,19 +120,21 @@ export class BuiltinScope {
   
   /** 
    * @param name { string }
+   * @param params { string }
    * @param fun { (...args: any[]) => any }
    */
-  define_function(name, fun) {
-    if(!this.functions.has(name)) this.functions.set(name, [])
-    this.functions.get(name).push(fun)
+  define_function(name, params, fun) {
+    if(!this.functions.has(name)) this.functions.set(name, new Map())
+    this.functions.get(name).set(params, fun)
   }
   
   /** 
    * @param name { string }
+   * @param params { string }
    * @param index { number }
    */
-  get_function(name, index) {
-    return this.functions.get(name)[index]
+  get_function(name, params) {
+    return this.functions.get(name).get(params)
   }
 }
 

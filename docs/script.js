@@ -1,7 +1,7 @@
 import { Interprater } from './src/sour-interprater/interprater.js';
 
 const tag = /<(?<tag>.*?)>(.*?)<\/\k<tag>>/g
-const version = '0.3 Beta'
+const version = '0.4 Beta'
 
 function lint(code) {
   code.replace(/(\s+)$/, (f, s) => {

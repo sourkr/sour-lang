@@ -73,11 +73,13 @@ export class InstanceType extends Type {
     this.methods = new Map()
     
     cls.methods.forEach((old_map, name) => {
-      const generic = type => type.kind == 'generic' ? gPair.get(type.name) : type
+      const generic = type => type.kind == 'generic' ? type.assigned(gPair.get(type.name)) : type
       
       const map = new Map(old_map.entries()
-        .map(entry => [new ParamList(entry[0].params.map(param => new ParamType(param.name, generic(param.type)))), entry[1]])
-        .map(entry => [entry[0], generic(entry[1])]))
+        .map(entry => [
+          new ParamList(entry[0].params.map(param => new ParamType(param.name, generic(param.type)))),
+          generic(entry[1])
+        ]))
       
       this.methods.set(name, map)
     })
@@ -89,11 +91,13 @@ export class InstanceType extends Type {
       if(this.class.extends) return this.class.extends.inAssignaleToInstance(type)
     }
     
+    if(type.kind == 'generic') return this.isAssignableTo(type.type)
+    
     return type.kind == 'special' && type.type == 'any'
   }
   
-  hasUnknown() {
-    return this.class.hasUnknown()
+  equals(type) {
+    return type.kind == 'instance' && type.cls == this.cls
   }
   
   has_method(name, args) {
@@ -104,12 +108,15 @@ export class InstanceType extends Type {
       .some(params => params.isAssignableTo(args))
   }
   
-  get_method_index(name, args) {
+  get_method_params(name, args) {
+    
     return [...this.methods.get(name).keys()]
-      .map(params => params.isAssignableTo(args))
-      .map((matched, index) => { return { matched, index } })
-      .find(result => result.matched)
-      .index ?? -1
+      .find(params => params.isAssignableTo(args))
+      .toString(true)
+      
+      // .map((matched, index) => { return { matched, index } })
+      // .find(result => result.matched)
+      // .index ?? -1
   
   }
   
@@ -172,6 +179,10 @@ export class SpecialType extends Type {
     return type.kind == 'special' && type.type == this.type
   }
   
+  equals(type) {
+    return type.kind = 'special' && type.type == this.type
+  }
+    
   toString() {
     return this.type
   }
@@ -197,14 +208,18 @@ export class ParamType extends Type {
   //   return arg.isAssignableTo(this.type)
   // }
   
+  equals(type) {
+    return type.kind == 'param' && type.type.equals(this.type)
+  }
+  
   hasUnknown() {
     return this.type.hasUnknown()
   }
   
-  toString() {
-    if(this.isOptional) return this.type.toString() + '?'
-    if(this.isSpreaded) return '...' + this.type.toString()
-    return this.type.toString()
+  toString(generic) {
+    if(this.isOptional) return this.type.toString(generic) + '?'
+    if(this.isSpreaded) return '...' + this.type.toString(generic)
+    return this.type.toString(generic)
   }
 }
 
@@ -242,16 +257,16 @@ export class ParamList extends Type {
     return true
   }
   
+  equals(type) {
+    return type.kind == 'params' && this.params.every((param, index) => param.equals(type.params.at(index)))
+  }
+  
   hasUnknown() {
     return this.params.some(param => param.hasUnknown())
   }
   
-  toString() {
-    return `(${this.params.join(', ')})`
-  }
-  
-  clone() {
-    return new ParamList([...this.params])
+  toString(generic) {
+    return `(${this.params.map(e => e.toString(generic)).join(',')})`
   }
 }
 
@@ -262,20 +277,19 @@ export class GenricType extends Type {
     this.name = name
   }
   
-  assign(type) {
-    this.type = type
+  assigned(type) {
+    const g = new GenricType(this.name)
+    g.type = type
+    return g
   }
   
   isAssignableTo(type) {
     return this.type.isAssignableTo(type)
   }
   
-  toString() {
+  toString(generic) {
+    if(generic) return this.name
     return (this.type || this.name).toString()
-  }
-  
-  clone() {
-    return new GenricType(this.name)
   }
 }
 
@@ -363,6 +377,12 @@ export class BuiltinScope {
       .some(params => params.isAssignableTo(args))
   }
   
+  has_same_fun(name, params) {
+    if(!this.has_function(name)) return false
+    return [...this.functions.get(name).keys()]
+      .some(p => p.equals(params))
+  }
+  
   /** 
    * @param name { string }
    * @param args { Type[] }
@@ -376,12 +396,13 @@ export class BuiltinScope {
    * @param name { string }
    * @param [args] { Type[] }
    */
-  get_function_index(name, args) {
+  get_function_params(name, args) {
     return [...this.functions.get(name).keys()]
-      .map(params => params.isAssignableTo(args))
-      .map((matched, index) => { return { matched, index } })
-      .find(result => result.matched)
-      .index ?? -1
+      .find(params => params.isAssignableTo(args))
+      .toString(true)
+      // .map((matched, index) => { return { matched, index } })
+      // .find(result => result.matched)
+      // .index ?? -1
       
   }
   

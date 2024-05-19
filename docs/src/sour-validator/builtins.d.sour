@@ -1,11 +1,25 @@
-class str {}
+class int {
+  fun equals(n: int): bool
+  
+  fun less_than(n: int): bool
+  
+  fun plus(n: int): int
+  fun plus(n: str): str
+  
+  fun str(): str
+}
+
+class str {
+  fun plus(n: int): str
+  fun plus(n: str): str
+  
+  fun str(): str
+}
+
 class bool {}
-class byte {}
-class int {}
-class short {}
-class long {}
+
 class float {}
-class double {}
+
 class char {}
 
 class array<T> {

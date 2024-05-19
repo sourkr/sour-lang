@@ -1,8 +1,16 @@
 import { Parser } from '../sour-parser/parser.js';
-import { ClassType, InstanceType, ANY } from './types.js';
+import { ClassType, InstanceType, ParamList, ANY } from './types.js';
 import { BUILTINS } from './builtin.js';
 
 const reserved = [ 'true', 'false', 'null', 'void' ]
+
+const op_names = new Map([
+  ['+', 'plus'],
+  ['=', 'equals'],
+  ['<', 'less_than'],
+])
+
+const single = '<>'
 
 export class Validator {
   #global = BUILTINS
@@ -34,8 +42,10 @@ export class Validator {
     switch (stmt.type) {
       case 'var': return this.#checkVar(stmt)
       case 'const': return this.#checkConst(stmt)
+      case 'fun': return this.#checkFun(stmt)
       case 'if': return this.#checkIf(stmt)
       case 'while': return this.#checkWhile(stmt)
+      case 'for': return this.#checkFor(stmt)
       
       default: return this.#checkExpr(stmt)
     }
@@ -54,6 +64,7 @@ export class Validator {
       case 'assign': return this.#checkAssign(expr)
       case 'array': return this.#checkArray(expr)
       case 'dot': return this.#checkDot(expr)
+      case 'op': return this.#checkOp(expr)
       
       default: this.#error(`unexpected symbol`, expr)
     }
@@ -116,6 +127,20 @@ export class Validator {
     return { ...v, typ, val }
   }
   
+  #checkFun(fun) {
+    const params = new ParamList([])
+    const name = fun.name.value
+    
+    if(this.#global.has_same_fun(name, params))
+      this.#error(`cannot redeclare function ${name}${params}`, name)
+    
+    const body = this.#checkBody(fun.body)
+    
+    this.#global.define_function(name, params, ANY)
+    
+    return { ...fun, body, params: params.toString() }
+  }
+  
   #checkIf(s) {
     const condition = this.#checkExpr(s.condition)
     if(condition.typ.class.name != 'bool') this.#error(`condition must be boolean`, s.condition)
@@ -135,6 +160,16 @@ export class Validator {
     return { ...s, condition, body }
   }
   
+  #checkFor(s) {
+    const initialisation = this.#checkStmt(s.initialisation)
+    const condition = this.#checkExpr(s.condition)
+    if(condition.typ.class.name != 'bool') this.#error(`condition must be boolean`, s.condition)
+    
+    const incrementation = this.#checkExpr(s.incrementation)
+    const body = this.#checkBody(s.body)
+    
+    return { ...s, initialisation, condition, incrementation, body }
+  }
   
   #checkBody(body) {
     return body.map(this.#checkStmt.bind(this))
@@ -166,11 +201,11 @@ export class Validator {
       
       // console.log(Object.fromEntries(left.typ.methods.get('at')))
       
-      const index = left.typ.get_method_index(name, typeArgs)
+      const params = left.typ.get_method_params(name, typeArgs)
       const typ = left.typ.get_method(name, typeArgs)
       const access = { ...call.access, left }
       
-      return { ...call, access, index, args, typ }
+      return { ...call, access, params, args, typ }
     }
     
     
@@ -191,13 +226,15 @@ export class Validator {
       return this.#error(errors.join('\n\n') + '\n\n', call.access, call)
     }
     
-    const index = this.#global.get_function_index(name, typeArgs)
+    const params = this.#global.get_function_params(name, typeArgs)
     const typ = this.#global.get_function(name, typeArgs)
     
-    return { ...call, index, args, typ }
+    return { ...call, params, args, typ }
   }
   
   #checkStr(str) {
+    if (str.err) this.#err(str.err)
+    
     return {
       ...str,
       val: str.value.slice(1, -1),
@@ -304,6 +341,39 @@ export class Validator {
     
     return { ...dot, left, typ }
   }
+  
+  #checkOp(op) {
+    const left = this.#checkExpr(op.left)
+    const right = this.#checkExpr(op.right)
+    const operator = op.operator.value
+    
+    // if(!op_names.has(operator)) return this.#error(`'${operator}' is not an operator.`, op.operator, { ...op, typ: ANY })
+    
+    const name = op_names.get(operator)
+    
+    if(!left.typ.has_method(name, [right.typ]))
+      return this.#error(`cannot find operator (${left.typ} ${operator}${op.isEquals?'=':''} ${right.typ})`, operator, { ...op, left, right })
+      
+    const params = left.typ.get_method_params(name, [right.typ])
+    const typ = left.typ.get_method(name, [right.typ])
+    
+    let eqParams
+    
+    if(op.isEquals) {
+      if(!single.includes(operator)) {
+        if(!typ.isAssignableTo(left.typ))
+          this.#error(`${typ} is not assignable to ${left.typ}`, left)
+      } else {
+        if (!left.typ.has_method('equals', [right.typ]))
+          this.#error(`cannot find operator (${left.typ} ${operator}= ${right.typ})`, operator)
+        else eqParams = left.typ.get_method_params('equals', [right.typ])
+      }
+    }
+    
+    return { ...op, left, right, typ, params, name, eqParams }
+  }
+  
+  // #checkOpEquals() {}
   
   
   #checkType(expr) {
