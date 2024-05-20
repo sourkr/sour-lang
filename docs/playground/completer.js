@@ -16,7 +16,7 @@ export class Completer {
     for (let stmt of body) {
       if (stmt.type == 'ident') {
         if (isInsideTok(index, stmt, len)) {
-          return this.listGlobals(stmt.value)
+          return this.listGlobals(stmt.value.substring(0, index - stmt.start.index))
         }
       }
       
@@ -30,6 +30,8 @@ export class Completer {
   }
   
   static listGlobals(prefix) {
+    // console.log(prefix)
+    
     return [
       ...this.listFuns(prefix)
     ]

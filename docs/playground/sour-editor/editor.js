@@ -179,6 +179,7 @@ export class SourEditor extends HTMLElement {
   }
   
   showInfo(info) {
+    this.#info.style.display = 'inline-block'
     this.#info.innerHTML = info
   }
   
@@ -208,7 +209,6 @@ export class SourEditor extends HTMLElement {
     this.#list.childNodes.forEach((item, i) => {
       item.style.background = index == i ? 'lightgrey' : 'transparent'
       if(i == index) {
-        this.#info.style.display = 'inline-block'
         this.showInfo(item[keyComp].details)
       }
     })

@@ -40,7 +40,6 @@ editor.oninput = () => {
 
 editor.onkeydown = ev => {
   if(ev.key != 'i' || !ev.ctrlKey) return
-  
   InfoSeeker.seek(lastAST, editor)
 }
 
