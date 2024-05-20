@@ -3,6 +3,7 @@ import { Interprater } from '../src/sour-interprater/interprater.js';
 import { Stylable } from './sour-editor/styles.js';
 import { Liner } from './linter.js';
 import { InfoSeeker } from './info.js';
+import { Completer } from './completer.js';
 
 import './sour-editor/editor.js';
 
@@ -34,6 +35,7 @@ editor.oninput = () => {
   editor.value = stylable
   
   lastAST = ast
+  Completer.complete(lastAST, editor)
 }
 
 editor.onkeydown = ev => {

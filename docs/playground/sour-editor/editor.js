@@ -76,6 +76,17 @@ const css = (`
     border-radius: 10px;
     width: max-content;
   }
+  
+  .comp {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 1px lightgrey;
+    padding: 5px;
+    border-radius: 10px;
+    width: max-content;
+  }
 `)
 
 export class SourEditor extends HTMLElement {
@@ -124,8 +135,17 @@ export class SourEditor extends HTMLElement {
     this.info.style.top = `${this.cursor_y}px`
     this.info.innerText = info
     
-    
     this.#root.appendChild(this.info)
+  }
+  
+  showCompletion(list) {
+    console.log(list)
+    this.comp = document.createElement('div')
+    this.comp.classList.add('comp')
+    this.comp.style.top = `${this.cursor_y}px`
+    this.comp.innerText = list.join('\n')
+    
+    this.#root.appendChild(this.comp)
   }
   
   get value() {
