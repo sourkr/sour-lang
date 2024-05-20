@@ -14,6 +14,7 @@ export class DefinationValidator {
     const body = []
     
     this.#parser.forEach(stmt => {
+      // console.log(stmt)
       if(stmt.type == 'class') {
         const name = stmt.name.name.value
         const generic = stmt.name.generic.map(ident => ident.value)
@@ -73,6 +74,7 @@ export class DefinationValidator {
       }))
       
       const ret = this.#checkType(stmt.ret)
+      ret.info = stmt.info
       
       this.#global.define_function(name, params, ret)
     }

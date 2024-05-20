@@ -12,10 +12,14 @@ export class DefinationParser {
   }
   
   #parseStmt() {
+    let cmt
+    
+    if(this.#tokens.peek().type == 'cmt') cmt = this.#parseCmt()
+    
     switch(true) {
       case this.#isKeyword('const'): return this.#parseConst()
       case this.#isKeyword('var'): return this.#parseVar()
-      case this.#isKeyword('fun'): return this.#parseFun()
+      case this.#isKeyword('fun'): return this.#parseFun(cmt)
       case this.#isKeyword('class'): return this.#parseClass()
       case this.#isKeyword('static'): return { type: 'static', stmt: this.#parseStmt()}
       // case this.#isKeyword('export'): return this.#parseExport()
@@ -63,8 +67,7 @@ export class DefinationParser {
     return { type: 'const', name, value }
   }
   
-  
-  #parseFun() {
+  #parseFun(info) {
     this.#nextToken()
     const name = this.#nextToken()
     this.#nextToken()
@@ -90,7 +93,7 @@ export class DefinationParser {
     
     const ret = this.#parseType()
     
-    return { type: 'fun', name, params, ret }
+    return { type: 'fun', name, params, ret, info }
   }
   
   #parseClass() {
@@ -283,6 +286,11 @@ export class DefinationParser {
     return { type: 'array', typ }
   }
   
+  #parseCmt() {
+    const cmt = this.#tokens.next()
+    
+    return cmt.value.trim().replace(/^\s*\*\s+/gm, '')
+  }
   
   // util
   #isKeyword(name) {

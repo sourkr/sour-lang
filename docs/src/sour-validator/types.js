@@ -181,10 +181,11 @@ export class FunctionType extends Type {
 }
 
 export class SpecialType extends Type {
-  constructor(type) {
+  constructor(type, info) {
     super('special')
     
     this.type = type
+    this.info = info
   }
   
   isAssignableTo(type) {

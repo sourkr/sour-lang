@@ -24,7 +24,7 @@ export class InfoSeeker {
           
           const type = new FunctionType(name, ...fun)
           
-          editor.showInfo(type.toHTML())
+          editor.showInfo(type.toHTML() + '<hr>' + fun[1].info)
         }
       }
     })

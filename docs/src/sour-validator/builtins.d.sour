@@ -29,4 +29,9 @@ class array<T> {
   fun at(index: int, value: T): void
 }
 
+/*
+ * prints the message to standard output
+ * stream.
+ */
+
 fun print(...message: any): void

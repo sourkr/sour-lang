@@ -130,8 +130,10 @@ export class Tokenizer {
     let str = this.#readWhile(c => !(c == '*' || c == EOF))
     // this.#stream.next()
     if(this.#stream.peek(1) != '/') str += '*' + this.#parseMultilineCmt()
-    this.#stream.next()
-    this.#stream.next()
+    else {
+      this.#stream.next()
+      this.#stream.next()
+    }
     return str
   }
   

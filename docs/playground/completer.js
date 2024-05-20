@@ -45,7 +45,7 @@ export class Completer {
         if(!name.startsWith(prefix)) return
         
         const type = new FunctionType(name, params, ret).toHTML()
-        completions.push(new Completion(prefix, name.substring(prefix.length), type))
+        completions.push(new Completion(prefix, name.substring(prefix.length), type, ret.info))
       })
     })
     
