@@ -1,3 +1,9 @@
+const red = 'red'
+const blue = 'dodgerblue'
+const violet = 'slateblue'
+const green = 'green'
+const orange = 'orange'
+
 export class Type {
   constructor(kind) {
     this.kind = kind
@@ -135,14 +141,19 @@ export class InstanceType extends Type {
     
     return this.class.name
   }
+  
+  toHTML() {
+    return `<span style="color:${red}">${this.class.name}</span>`
+  }
 }
 
 export class FunctionType extends Type {
-  constructor(params, returns) {
+  constructor(name, params, ret) {
     super('function')
     
+    this.name = name
     this.params = params
-    this.returns = returns
+    this.ret = ret
   }
   
   isAssignableTo(type) {
@@ -162,6 +173,10 @@ export class FunctionType extends Type {
   
   toParamsString() {
     return `(${this.params.join(',')})`
+  }
+  
+  toHTML() {
+    return `<span style="color:${red}">fun</span> <span style="color:${blue}">${this.name}</span>${this.params.toHTML()}: ${this.ret.toHTML()}`
   }
 }
 
@@ -185,6 +200,10 @@ export class SpecialType extends Type {
     
   toString() {
     return this.type
+  }
+  
+  toHTML() {
+    return `<span style="color:${red}">${this.type}</span>`
   }
 }
 
@@ -220,6 +239,11 @@ export class ParamType extends Type {
     if(this.isOptional) return this.type.toString(generic) + '?'
     if(this.isSpreaded) return '...' + this.type.toString(generic)
     return this.type.toString(generic)
+  }
+  
+  toHTML() {
+    const base = `<span style="color:${orange}">${this.name}</span>: ${this.type.toHTML()}`
+    return this.isSpreaded ? `...${base}` : base
   }
 }
 
@@ -267,6 +291,10 @@ export class ParamList extends Type {
   
   toString(generic) {
     return `(${this.params.map(e => e.toString(generic)).join(',')})`
+  }
+  
+  toHTML() {
+    return `(${this.params.map(e => e.toHTML()).join(', ')})`
   }
 }
 

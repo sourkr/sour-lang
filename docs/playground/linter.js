@@ -1,4 +1,3 @@
-
 import { Color, Error } from './sour-editor/styles.js';
 
 const blue = 'dodgerblue'

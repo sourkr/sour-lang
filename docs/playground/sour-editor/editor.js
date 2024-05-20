@@ -1,3 +1,5 @@
+const keyComp = Symbol('comp')
+
 const css = (`
   :host {
     display: flex !important;
@@ -66,26 +68,34 @@ const css = (`
     text-decoration: underline wavy red;
   }
   
-  .info {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
+  .list {
+    display: inline-block;
+    pointer-events: auto;
     box-shadow: 0 0 1px lightgrey;
-    padding: 5px;
-    border-radius: 10px;
-    width: max-content;
+    height: fit-content;
+    
+    & div {
+      padding-inline: 5px;
+    }
   }
   
-  .comp {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
+  .info {
+    display: inline-block;
+    pointer-events: auto;
     box-shadow: 0 0 1px lightgrey;
     padding: 5px;
-    border-radius: 10px;
-    width: max-content;
+  }
+  
+  .completion {
+    display: flex;
+    position: absolute;
+    width: calc(100% - 20px);
+    top: 0;
+    margin: 10px;
+    pointer-events: none;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
   }
 `)
 
@@ -94,6 +104,9 @@ export class SourEditor extends HTMLElement {
   #textarea
   #pre
   #lineno
+  #completion
+  #list
+  #info
   
   constructor() {
     super()
@@ -102,18 +115,28 @@ export class SourEditor extends HTMLElement {
 
     const style = document.createElement('style')
     const container = document.createElement('div')
+    this.#completion = document.createElement('div')
     
     this.#textarea  = document.createElement('textarea')
     this.#pre       = document.createElement('pre')
     this.#lineno    = document.createElement('pre')
     
+    this.#list = document.createElement('div')
+    this.#info = document.createElement('div')
+    
     style.textContent = css
     container.classList.add('container')
+    this.#completion.classList.add('completion')
+    
     this.#pre.classList.add('pre')
     this.#lineno.classList.add('lineno')
     
-    this.#root.append(style, this.#lineno, container)
+    this.#list.classList.add('list')
+    this.#info.classList.add('info')
+    
+    this.#root.append(style, this.#lineno, container, this.#completion)
     container.append(this .#textarea, this.#pre)
+    this.#completion.append(this.#list, this.#info)
     
     this.#update()
     
@@ -121,31 +144,74 @@ export class SourEditor extends HTMLElement {
       this.#pre.innerText = this.#textarea.value
       this.#update()
       
-      if(this.info) this.info.remove()
+      this.#completion.style.top = this.cursor_y + 'px'
     }
     
-    // this.#textarea.onfocus = () => {
-    //   this.dispatchEvent(new FocusEvent('focus'))
-    // }
+    this.#textarea.onkeydown = ev => {
+      if(ev.key == 'ArrowDown' && this.selected != -1) {
+        this.selected++
+        if(this.selected == -1) this.selected = 0
+        ev.preventDefault()
+      }
+      
+      if (ev.key == 'ArrowUp') {
+        
+        if(this.selected != -1) {
+          this.selected--
+          if (this.selected == -1) this.selected = this.#list.childElementCount - 1
+          ev.preventDefault()
+        } else if(this.current_index == 0) {
+          ev.preventDefault()
+        }
+      }
+      
+      if (ev.key == 'Enter' && this.selected != -1) {
+        const comp = this.#list.children.item(this.selected)[keyComp]
+        const index = this.current_index
+        const left = this.value.substring(0, index)
+        const right = this.value.substring(index)
+        
+        this.value = left + comp.sufix + right
+        
+        ev.preventDefault()
+      }
+    }
   }
   
   showInfo(info) {
-    this.info = document.createElement('div')
-    this.info.classList.add('info')
-    this.info.style.top = `${this.cursor_y}px`
-    this.info.innerText = info
-    
-    this.#root.appendChild(this.info)
+    this.#info.innerHTML = info
   }
   
   showCompletion(list) {
-    console.log(list)
-    this.comp = document.createElement('div')
-    this.comp.classList.add('comp')
-    this.comp.style.top = `${this.cursor_y}px`
-    this.comp.innerText = list.join('\n')
+    this.#list.innerHTML = ''
     
-    this.#root.appendChild(this.comp)
+    if(!list.length) this.#info.style.display = 'none'
+    
+    list.forEach(completion => {
+      const item = document.createElement('div')
+      item.innerHTML = completion.name
+      item[keyComp] = completion
+      this.#list.append(item)
+    })
+    
+    this.selected = 0
+  }
+  
+  get selected() {
+    const children = [...this.#list.children]
+    if (children.length == 0) return -1
+    
+    return children.findIndex(item => item.style.background == 'lightgrey')
+  }
+  
+  set selected(index) {
+    this.#list.childNodes.forEach((item, i) => {
+      item.style.background = index == i ? 'lightgrey' : 'transparent'
+      if(i == index) {
+        this.#info.style.display = 'inline-block'
+        this.showInfo(item[keyComp].details)
+      }
+    })
   }
   
   get value() {
@@ -153,7 +219,7 @@ export class SourEditor extends HTMLElement {
   }
   
   set value(s) {
-    this.#textarea.value = s.text
+    this.#textarea.value = s.text || s
     this.#pre.innerHTML = s
   }
   
