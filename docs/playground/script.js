@@ -2,6 +2,7 @@ import { Validator } from '../src/sour-validator/validator.js';
 import { Interprater } from '../src/sour-interprater/interprater.js';
 import { Stylable } from './sour-editor/styles.js';
 import { Liner } from './linter.js';
+import { InfoSeeker } from './info.js';
 
 import './sour-editor/editor.js';
 
@@ -37,23 +38,8 @@ editor.oninput = () => {
 
 editor.onkeydown = ev => {
   if(ev.key != 'i' || !ev.ctrlKey) return
-  const index = editor.current_index
-  const len = editor.value.length
   
-  for(let err of lastAST.errors) {
-    if (isInsideTok(index, err, len)) {
-      editor.showInfo('Error: ' + err.msg)
-      // return
-    }
-  }
-  
-  for(let stmt of lastAST.body) {
-    if (stmt.type == 'call') {
-      if (isInsideTok(index, stmt.access)) {
-        editor.showInfo(stmt.typ)
-      }
-    }
-  }
+  InfoSeeker.seek(lastAST, editor)
 }
 
 run.onclick = async () => {
