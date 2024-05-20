@@ -1,9 +1,12 @@
 const css = (`
   :host {
-    height: 250px;
     display: flex !important;
+    position: relative;
+    height: 250px;
     gap: 10px;
     font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5em;
   }
   
   .container {
@@ -21,11 +24,13 @@ const css = (`
     outline: none;
     width: 100%;
     height: 100%;
-    font-size: 1em;
     color: transparent;
     caret-color: black;
     background: transparent;
+    
     font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
   }
   
   textarea::selection {
@@ -36,7 +41,7 @@ const css = (`
   
   pre {
     margin: 0;
-    font - size: 1 em;
+    font-size: inherit;
   }
   
   .pre {
@@ -45,7 +50,10 @@ const css = (`
     width: 100%;
     height: 100%;
     pointer-events: none;
+    
     font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
   }
   
   .lineno {
@@ -57,9 +65,21 @@ const css = (`
   err {
     text-decoration: underline wavy red;
   }
+  
+  .info {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 1px lightgrey;
+    padding: 5px;
+    border-radius: 10px;
+    width: max-content;
+  }
 `)
 
 export class SourEditor extends HTMLElement {
+  #root
   #textarea
   #pre
   #lineno
@@ -67,7 +87,7 @@ export class SourEditor extends HTMLElement {
   constructor() {
     super()
 
-    const shadow = this.attachShadow({ mode: 'open' })
+    this.#root = this.attachShadow({ mode: 'open' })
 
     const style = document.createElement('style')
     const container = document.createElement('div')
@@ -81,7 +101,7 @@ export class SourEditor extends HTMLElement {
     this.#pre.classList.add('pre')
     this.#lineno.classList.add('lineno')
     
-    shadow.append(style, this.#lineno, container)
+    this.#root.append(style, this.#lineno, container)
     container.append(this .#textarea, this.#pre)
     
     this.#update()
@@ -89,11 +109,23 @@ export class SourEditor extends HTMLElement {
     this.#textarea.oninput = () => {
       this.#pre.innerText = this.#textarea.value
       this.#update()
+      
+      if(this.info) this.info.remove()
     }
     
     // this.#textarea.onfocus = () => {
     //   this.dispatchEvent(new FocusEvent('focus'))
     // }
+  }
+  
+  showInfo(info) {
+    this.info = document.createElement('div')
+    this.info.classList.add('info')
+    this.info.style.top = `${this.cursor_y}px`
+    this.info.innerText = info
+    
+    
+    this.#root.appendChild(this.info)
   }
   
   get value() {
@@ -105,10 +137,30 @@ export class SourEditor extends HTMLElement {
     this.#pre.innerHTML = s
   }
   
+  get current_index() {
+    return this.#textarea.selectionStart
+  }
+  
+  get current_line() {
+    const caretPos = this.current_index;
+    const textBeforeCaret = this.value.substring(0, caretPos);
+    const lines = textBeforeCaret.split('\n');
+    return lines.length;
+  }
+  
+  get cursor_y() {
+    const height = parseFloat(getComputedStyle(this.#textarea).lineHeight)
+    const line = this.current_line
+    const padding = parseFloat(getComputedStyle(this).paddingTop)
+    
+    return height * line + padding
+  }
+  
   #update() {
     var text = this.value.split('\n').map((_, i) => i + 1).join('\n')
     this.#lineno.innerText = text
   }
 }
+
 
 customElements.define('sour-editor', SourEditor)

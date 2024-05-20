@@ -273,7 +273,7 @@ export class Validator {
       return { ...ident, typ: this.#global.get_constant(name) }
     }
     
-    this.#error(`cannot find symbol ${name}`, ident)
+    this.#error(`cannot find variable '${name}'`, ident)
     
     return { ...ident, typ: ANY }
   }

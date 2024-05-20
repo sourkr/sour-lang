@@ -1,7 +1,9 @@
 import { Validator } from '../src/sour-validator/validator.js';
 import { Interprater } from '../src/sour-interprater/interprater.js';
+import { Stylable } from './sour-editor/styles.js';
+import { Liner } from './linter.js';
+
 import './sour-editor/editor.js';
-import { Stylable, Color } from './sour-editor/styles.js';
 
 const editor = document.querySelector('sour-editor')
 const run = document.getElementById('run')
@@ -10,6 +12,8 @@ const output = document.getElementById('output')
 const blue = 'dodgerblue' 
 const violet = 'slateblue'
 const green = 'green'
+
+let lastAST = { errors: [], body: [] } 
 
 editor.onfocus = () => {
   output.style.display = 'none'
@@ -24,9 +28,32 @@ editor.oninput = () => {
   const validator = new Validator(editor.value)
   const ast = validator.validate()
   
-  ast.body.forEach(stmt => lint(stylable, stmt))
+  Liner.lintAST(stylable, ast, editor.value.length)
   
   editor.value = stylable
+  
+  lastAST = ast
+}
+
+editor.onkeydown = ev => {
+  if(ev.key != 'i' || !ev.ctrlKey) return
+  const index = editor.current_index
+  const len = editor.value.length
+  
+  for(let err of lastAST.errors) {
+    if (isInsideTok(index, err, len)) {
+      editor.showInfo('Error: ' + err.msg)
+      // return
+    }
+  }
+  
+  for(let stmt of lastAST.body) {
+    if (stmt.type == 'call') {
+      if (isInsideTok(index, stmt.access)) {
+        editor.showInfo(stmt.typ)
+      }
+    }
+  }
 }
 
 run.onclick = async () => {
@@ -41,15 +68,11 @@ run.onclick = async () => {
   }
 }
 
-function lint(stylable, stmt, color) {
-  if(stmt.type == 'str') lint_token(stylable, stmt, green)
-  
-  if(stmt.type == 'call') {
-    lint_token(stylable, stmt.access, blue)
-    stmt.args.forEach(arg => lint(stylable, arg))
-  }
+function isInsideTok(index, tok, len) {
+  return index >= (tok.start?.index ?? len - 1) && index <= (tok.end?.index ?? len)
 }
 
-function lint_token(stylable, token, color) {
-  stylable.apply(new Color(token.start.index, token.end.index, color))
+
+function seekInfo(stmt) {
+  
 }
