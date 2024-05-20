@@ -1,4 +1,9 @@
+import { BUILTINS } from '../src/sour-validator/builtin.js';
+import { FunctionType } from '../src/sour-validator/types.js';
+
 export class InfoSeeker {
+  static global = BUILTINS
+  
   static seek(ast, editor) {
     const index = editor.current_index
     const len = editor.value.length
@@ -12,7 +17,14 @@ export class InfoSeeker {
     ast.body.forEach(stmt => {
       if(stmt.type == 'call') {
         if(isInsideTok(index, stmt.access, len)) {
-          editor.showInfo(stmt.typ.toHTML())
+          const args = stmt.args.map(arg => arg.typ)
+          const name = stmt.access.value
+          const fun = [...this.global.functions.get(name).entries()]
+            .find(entry => entry[0].isAssignableTo(args))
+          
+          const type = new FunctionType(name, ...fun)
+          
+          editor.showInfo(type.toHTML())
         }
       }
     })
