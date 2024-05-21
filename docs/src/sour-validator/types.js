@@ -322,111 +322,83 @@ export class GenricType extends Type {
   }
 }
 
+export class VarType extends Type {
+  constructor(name, type) {
+    super('var')
+    
+    this.name = name
+    this.type = type
+  }
+  
+  toHTML() {
+    return `<span style="color:${red}">var</span> ${this.name}: ${this.type.toHTML()}`
+  }
+}
+
 export const VOID = new SpecialType('void')
 export const ANY = new SpecialType('any')
 
 
 export class BuiltinScope {
-  /** @type { Map<string, Type> } */
-  constants = new Map()
-  
-  /** @type { Map<string, Type> } */
-  variables = new Map()
-  
-  /** @type { Map<string, Map<ParamList, Type>> } */
-  functions = new Map()
-  
-  /** @type { Map<string, ClassType> } */
+  consts = new Map()
+  vars = new Map()
+  funs = new Map()
   classes = new Map()
   
-  /**
-   * @param name { string }
-   * @param type { Type }
-   */
-  define_constant(name, type) {
-    this.constants.set(name, type)
+  define_const(name, type) {
+    this.consts.set(name, type)
   }
   
-  /** @param name { string } */
-  has_constant(name) {
-    return this.constants.has(name)
+  has_const(name) {
+    return this.consts.has(name)
   }
   
-  /** @param name { string } */
-  get_constant(name) {
-    return this.constants.get(name)
+  get_const(name) {
+    return this.consts.get(name)
   }
   
-  /**
-   * @param name { string }
-   * @param type { Type }
-   */
-  define_variable(name, type) {
-    this.variables.set(name, type)
+  define_var(name, type) {
+    this.vars.set(name, type)
   }
   
-  has(name) {
-    return this.has_constant(name)
-      || this.has_variable(name)
-      || this.has_function(name)
-      || this.has_class(name)
+  
+  has_var(name) {
+    return this.vars.has(name)
   }
   
-  /** @param name { string } */
-  has_variable(name) {
-    return this.variables.has(name)
+  get_var(name) {
+    return this.vars.get(name)
   }
   
-  /** @param name { string } */
-  get_variable(name) {
-    return this.variables.get(name)
-  }
-  
-  /**
-   * @param name { string }
-   * @param params { ParamList }
-   * @param type { Type }
-   */
-  define_function(name, params, ret) {
-    if(!this.functions.has(name))
-      this.functions.set(name, new Map())
+  // funs
+  define_fun(name, params, ret) {
+    if(!this.funs.has(name))
+      this.funs.set(name, new Map())
     
-    this.functions.get(name).set(params, ret)
+    this.funs.get(name).set(params, ret)
   }
   
-  /**
-   * @param name { string }
-   * @param [args] { Type[] }
-   */
-  has_function(name, args) {
-    if(!args) return this.functions.has(name)
-    if(!this.has_function(name)) return false
+  has_fun(name, args) {
+    if(!args) return this.funs.has(name)
+    if(!this.has_fun(name)) return false
     
-    return [...this.functions.get(name).keys()]
+    return [...this.funs.get(name).keys()]
       .some(params => params.isAssignableTo(args))
   }
   
   has_same_fun(name, params) {
     if(!this.has_function(name)) return false
-    return [...this.functions.get(name).keys()]
+    return [...this.funs.get(name).keys()]
       .some(p => p.equals(params))
   }
   
-  /** 
-   * @param name { string }
-   * @param args { Type[] }
-   */
-  get_function(name, args) {
-    return [...this.functions.get(name).entries()]
+  get_fun(name, args) {
+    return [...this.funs.get(name).entries()]
       .find(entry => entry[0].isAssignableTo(args))[1]
   }
   
-  /**
-   * @param name { string }
-   * @param [args] { Type[] }
-   */
-  get_function_params(name, args) {
-    return [...this.functions.get(name).keys()]
+  get_fun_params(name, args) {
+    return [...this.funs.get(name).keys()]
       .find(params => params.isAssignableTo(args))
       .toString(true)
       // .map((matched, index) => { return { matched, index } })
@@ -435,26 +407,88 @@ export class BuiltinScope {
       
   }
   
-  /** @param name { string } */
-  get_functions(name) {
-    return this.functions.get(name)
+  get_funs(name) {
+    if(!name) return this.funs
+    return this.funs.get(name)
   }
   
-  /**
-   * @param name { string }
-   * @param cls { ClassType }
-   */
   define_class(name, cls) {
     this.classes.set(name, cls)
   }
   
-  /** @param name { string } */
   get_class(name) {
     return this.classes.get(name)
   }
   
-  /** @param name { string } */
   has_class(name) {
     return this.classes.has(name)
+  }
+  
+  has(name) {
+    return this.has_const(name)
+      || this.has_var(name)
+      || this.has_fun(name)
+      || this.has_class(name)
+  }
+  
+}
+
+export class GlobalScope {
+  #builins
+  
+  vars = new Map()
+  
+  constructor(builins) {
+    this.#builins = builins
+  }
+  
+  has_const() {
+    return false
+  }
+  
+  // vars
+  def_var(name, type) {
+    this.vars.set(name, type)
+  }
+  
+  has_var(name) {
+    return this.vars.has(name)
+  }
+  
+  get_var(name) {
+    return this.vars.get(name)
+  }
+  
+  get_vars() {
+    return this.vars
+  }
+  
+  
+  // funs
+  has_fun(name, args) {
+    return this.#builins.has_fun(name, args)
+  }
+  
+  get_fun_params(name, args) {
+    return this.#builins.get_fun_params(name, args)
+  }
+  
+  get_fun(name, args) {
+    return this.#builins.get_fun(name, args)
+  }
+  
+  get_funs(name) {
+    return this.#builins.get_funs(name)
+  }
+  
+  
+  // classes
+  get_class(name) {
+    return this.#builins.get_class(name)
+  }
+  
+  
+  has(name) {
+    return this.#builins.has(name)
   }
 }

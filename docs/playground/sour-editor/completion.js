@@ -11,6 +11,7 @@ export class Completion {
   }
   
   get details() {
-    return `${this.type}<hr>${this.info}`
+    if(!this.type) return ''
+    return `${this.type}${this.info ? `<hr>${this.info}` : ''}`
   }
 }

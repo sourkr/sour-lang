@@ -83,9 +83,14 @@ export class Tokenizer {
       case puncs.includes(c): return token('punc', this.#stream.next(), start, this.#stream.pos())
       case c == '"'         : return this.#parseStr(start)
       case c == "'"         : return this.#parseChar(start)
-      case c == EOF         : return token('eof', 'end of file', start, this.#stream.pos())
+      case c == EOF         : return this.#parseEOF(start)
       default               : return token('unknown', this.#stream.next(), start, this.#stream.pos())
     }
+  }
+  
+  #parseEOF(start) {
+    start.index--
+    return token('eof', 'end of file', start, this.#stream.pos())
   }
   
   #readWhile(predicate) {

@@ -1,5 +1,5 @@
 import { Parser } from '../sour-parser/parser.js';
-import { ClassType, InstanceType, ParamList, ANY } from './types.js';
+import { GlobalScope, ClassType, InstanceType, ParamList, ANY } from './types.js';
 import { BUILTINS } from './builtin.js';
 
 const reserved = [ 'true', 'false', 'null', 'void' ]
@@ -13,7 +13,7 @@ const op_names = new Map([
 const single = '<>'
 
 export class Validator {
-  #global = BUILTINS
+  #global = new GlobalScope(BUILTINS)
   
   #ast = {
     errors: [],
@@ -96,8 +96,9 @@ export class Validator {
       } else typ = val.typ
     }
     
+    if(typ) typ.usage = 0
     
-    this.#global.define_variable(name, typ)
+    this.#global.def_var(name, typ)
     
     return { ...v, typ, val }
   }
@@ -211,13 +212,13 @@ export class Validator {
     
     const name = call.access.value
     
-    if(!this.#global.has_function(name))
+    if(!this.#global.has_fun(name))
       return this.#error(`cannot not find function ${name}`, call.access, call)
     
     const args = call.args.map(arg => this.#checkExpr(arg))
     const typeArgs = args.map(arg => arg.typ)
     // console.log(typeArgs)
-    if(!this.#global.has_function(name, typeArgs)) {
+    if(!this.#global.has_fun(name, typeArgs)) {
       const funs = this.#global.get_functions(name)
       const errors = []
       
@@ -226,8 +227,9 @@ export class Validator {
       return this.#error(errors.join('\n\n') + '\n\n', call.access, call)
     }
     
-    const params = this.#global.get_function_params(name, typeArgs)
-    const typ = this.#global.get_function(name, typeArgs)
+    const params = this.#global.get_fun_params(name, typeArgs)
+  /** @param name { string } */
+    const typ = this.#global.get_fun(name, typeArgs)
     
     return { ...call, params, args, typ }
   }
@@ -265,11 +267,13 @@ export class Validator {
       return { ...ident, typ: new InstanceType(this.#global.get_class('bool')) }
     }
     
-    if (this.#global.has_variable(name)) {
-      return { ...ident, typ: this.#global.get_variable(name) }
+    if (this.#global.has_var(name)) {
+      const typ = this.#global.get_var(name)
+      typ.usage++
+      return { ...ident, typ }
     }
     
-    if (this.#global.has_constant(name)) {
+    if (this.#global.has_const(name)) {
       return { ...ident, typ: this.#global.get_constant(name) }
     }
     
@@ -447,5 +451,5 @@ export class Validator {
 // }
 
 function error(msg, token) {
-  return { type: 'err', msg, start: token.start, end: token.end }
+  return { type: 'err', msg, start: token?.start, end: token?.end }
 }

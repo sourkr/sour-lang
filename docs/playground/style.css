@@ -12,6 +12,7 @@ main {
   height: calc(100vh - 60px);
   gap: 10px;
   background: hsl(50, 50%, 90%);
+  /* height: 100dvh; */
 }
 
 sour-editor {

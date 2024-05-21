@@ -53,9 +53,9 @@ export class Parser {
     let valType
     let value
     
-    this.#nextToken() // skip 'var'
+    const kw = this.#nextToken()
     
-    if(!this.#isIdent()) return unexpected(this.#nextToken(), 'var', { })
+    if(!this.#isIdent()) return unexpected(this.#nextToken(), 'var', { kw })
     const name = this.#nextToken()
     
     if(this.#isPunc(':')) {
@@ -68,11 +68,12 @@ export class Parser {
       this.#nextToken() // skip '='
     
       value = this.#parseExpr()
-      if(is_error(value)) return unexpected(value, 'var', { name, valType })
+      if(is_error(value)) return unexpected(value, 'var', { kw, name, valType })
     }
     
-    if(!(valType || value)) return unexpected(this.#nextToken(), 'var', { name, valType, value })
-    return { type: 'var', name, valType, value }
+    if(!(valType || value)) return unexpected(this.#nextToken(), 'var', { kw, name, valType, value })
+    
+    return { type: 'var', kw, name, valType, value }
   }
   
   #parseConst() {

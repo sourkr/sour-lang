@@ -76,7 +76,7 @@ export class DefinationValidator {
       const ret = this.#checkType(stmt.ret)
       ret.info = stmt.info
       
-      this.#global.define_function(name, params, ret)
+      this.#global.define_fun(name, params, ret)
     }
     
     // if(stmt.type == 'cls-dec') {
