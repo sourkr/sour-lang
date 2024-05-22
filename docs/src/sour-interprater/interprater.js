@@ -1,10 +1,9 @@
 import { Validator } from '../sour-validator/validator.js';
-import { BUILTIN } from './builtin.js';
+import { BUILTIN, byte, int } from './builtin.js';
 import { BuiltinScope, Char, Float } from './scope.js';
 import { Stream } from './stream.js';
 
 const nums = [ 'byte', 'short', 'int', 'long' ]
-
 
 export class Interprater {
   #global = BUILTIN
@@ -180,6 +179,14 @@ export class Interprater {
       
       return result
     }
+    
+    if(expr.type == 'as') {
+      const name = expr.castType.name.value
+      const value = this.#interprateExpr(expr.expr)
+      
+      if (name == 'byte') return byte(value.value)
+      if (name == 'int') return int(value.value)
+    }
   }
   
   #error({ msg, start }) {
@@ -187,16 +194,13 @@ export class Interprater {
   }
 }
 
-function str(expr) {
-  if(expr.type == 'ident') return expr.value
-  if(expr.type == 'dot') return `${str(expr.left)}.${str(expr.right)}`
-}
-
 function getDefault(expr) {
   if(expr.type == 'instance') {
     const name = expr.name.value
     
-    if(nums.includes(name)) return 0
+    if(name == 'byte') return byte(0)
+    if(name == 'int') return int(0)
+    
     if(name == 'float') return new Float(0)
     if(name == 'double') return new Float(0)
     if(name == 'bool') return false

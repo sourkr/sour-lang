@@ -1,3 +1,5 @@
+class byte {}
+
 class int {
   fun equals(n: int): bool
   

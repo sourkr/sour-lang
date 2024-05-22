@@ -1,6 +1,6 @@
 import { Completion } from './sour-editor/completion.js';
 import { BUILTINS } from '../src/sour-validator/builtin.js';
-import { GlobalScope, FunctionType, VarType } from '../src/sour-validator/types.js';
+import { GlobalScope, FunctionType, VarType, InstanceType } from '../src/sour-validator/types.js';
 
 export class Completer {
   static global = new GlobalScope(BUILTINS)
@@ -16,8 +16,13 @@ export class Completer {
   
   static listBody(body, index, len) {
     for (let stmt of body) {
+      if(!stmt) continue
+      
       if (stmt.type == 'var') {
-        this.global.def_var(stmt.name?.value, stmt.val?.typ)
+        if(isInsideTok(index, stmt.valType?.name, len))
+          return this.listTypes(stmt.valType.name.value.substring(0, index - stmt.valType?.name?.start?.index))
+        
+        this.global.def_var(stmt.name?.value, stmt.typ)
       }
       
       if (stmt.type == 'call') {
@@ -59,8 +64,7 @@ export class Completer {
     this.global.get_vars().forEach((type, name) => {
       if(!name) return
       if(!name.startsWith(prefix)) return
-      
-      
+      // console.log(name, type)
       const typ = new VarType(name, type).toHTML()
       completions.push(new Completion(prefix, name.substring(prefix.length), typ))
     })
@@ -82,9 +86,25 @@ export class Completer {
     
     return completions
   }
+  
+  static listTypes(prefix) {
+    const completions = []
+    
+    this.global.get_classes().forEach((cls, name) => {
+      if (!name.startsWith(prefix)) return
+      if (name == prefix) return
+    
+      const type = new InstanceType(cls).toHTML()
+      completions.push(new Completion(prefix, name.substring(prefix.length), type))
+    })
+    
+    return completions
+  }
 }
 
 function isInsideTok(index, tok, len) {
+  if(!tok) return false
+  
   const start = tok.start?.index ?? len - 1
   const end = tok.end?.index ?? len
   

@@ -483,11 +483,20 @@ export class GlobalScope {
   
   
   // classes
+  has_class(name) {
+    return this.#builins.has_class(name)
+  }
+  
   get_class(name) {
     return this.#builins.get_class(name)
   }
   
+  get_classes() {
+    return this.#builins.classes
+  }
   
+  
+  // all
   has(name) {
     return this.#builins.has(name)
   }

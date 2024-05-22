@@ -2,30 +2,35 @@ import { BuiltinScope, Class, Instance } from './scope.js';
 
 export const BUILTIN = new BuiltinScope()
 
+const BYTE = new Class()
+const INT = new Class()
 const BOOL = new Class()
 const STR = new Class()
 
 
-const str = create.bind(STR)
-const bool = create.bind(BOOL)
+export const byte = create.bind(BYTE)
+export const int = create.bind(INT)
+export const str = create.bind(STR)
+export const bool = create.bind(BOOL)
+
+// byte
+{
+  BYTE.define_method('constructor', '', (self, value) => self.value = value << 24 >> 24)
+
+  BYTE.define_method('str', '()', self => self.value + '')
+
+  BUILTIN.classes.set('byte', BYTE)
+}
 
 // int
 {
-  const INT = new Class()
-  
-  function create(value) {
-    const instance = INT.instance()
-    instance.get_method('constructor', '')(instance, value)
-    return instance
-  }
-  
   INT.define_method('constructor', '', (self, value) => self.value = value)
   
   INT.define_method('equals', '(int)', (self, right) => bool(self.value === right.value))
   
   INT.define_method('less_than', '(int)', (self, right) => bool(self.value < right.value))
   
-  INT.define_method('plus', '(int)', (self, right) => create(self.value + right.value))
+  INT.define_method('plus', '(int)', (self, right) => int(self.value + right.value))
   INT.define_method('plus', '(str)', (self, right) => str(self.value + right.value))
   
   INT.define_method('str', '()', self => self.value + '')
@@ -33,7 +38,7 @@ const bool = create.bind(BOOL)
   BUILTIN.classes.set('int', INT)
 }
 
-// int
+// bool
 {
   BOOL.define_method('constructor', '', (self, value) => self.value = value)
   

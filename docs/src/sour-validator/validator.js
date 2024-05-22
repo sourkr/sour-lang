@@ -3,14 +3,13 @@ import { GlobalScope, ClassType, InstanceType, ParamList, ANY } from './types.js
 import { BUILTINS } from './builtin.js';
 
 const reserved = [ 'true', 'false', 'null', 'void' ]
-
 const op_names = new Map([
   ['+', 'plus'],
   ['=', 'equals'],
   ['<', 'less_than'],
 ])
-
 const single = '<>'
+const nums = ['byte', 'int']
 
 export class Validator {
   #global = new GlobalScope(BUILTINS)
@@ -65,6 +64,7 @@ export class Validator {
       case 'array': return this.#checkArray(expr)
       case 'dot': return this.#checkDot(expr)
       case 'op': return this.#checkOp(expr)
+      case 'as': return this.#checkAs(expr)
       
       default: this.#error(`unexpected symbol`, expr)
     }
@@ -79,11 +79,11 @@ export class Validator {
     let typ
     
     const name = v.name?.value
-    if(this.#global.has(name)) this.#error(`cannot redeclare symbol ${name}`, v.name)
+    if(this.#global.has(name)) this.#error(`cannot redeclare symbol '${name}'`, v.name)
     
     if(v.valType) {
       typ = this.#checkType(v.valType)
-      if (typ.type == 'err') this.#err(type)
+      if (typ.type == 'err') this.#err(typ)
     }
     
     if(v.value) {
@@ -92,7 +92,7 @@ export class Validator {
       
       if(typ) {
         if(!val.typ.isAssignableTo(typ))
-          this.#error(`value of type ${val.typ} is not assignable to variable of type ${typ}`, v.value)
+          this.#error(`value of type '${val.typ}'' is not assignable to variable of type '${typ}'`, v.value)
       } else typ = val.typ
     }
     
@@ -285,7 +285,7 @@ export class Validator {
   #checkChar(char) {
     return {
       ...char,
-      val: str.value.slice(1, -1),
+      val: char.value.slice(1, -1),
       typ: new InstanceType(this.#global.get_class('char'))
     }
   }
@@ -377,16 +377,29 @@ export class Validator {
     return { ...op, left, right, typ, params, name, eqParams }
   }
   
+  #checkAs(as) {
+    const expr = this.#checkExpr(as.expr)
+    const typ = this.#checkType(as.castType)
+    
+    if(!this.#cast(expr.typ, typ)) {
+      this.#error(`cannot cast '${expr.typ}' to '${typ}`, as.kw)
+    }
+    
+    return { ...as, expr, typ }
+  }
+  
   // #checkOpEquals() {}
   
   
   #checkType(expr) {
     if(!expr) return ANY
+    if(expr.err) this.#err(expr.err)
     
     if(expr.type == 'instance') {
-      const name = expr.name.value
-      if(name == 'void') return error('type void is not allowed here', expr)
-      if(!this.#global.has_class(name)) return error(`${name} is not a type`, expr)
+      const name = expr.name?.value
+      if(!name) return ANY
+      if(name == 'void') return this.#error('type void is not allowed here', expr, ANY)
+      if(!this.#global.has_class(name)) return this.#error(`${name} is not a type`, expr.name, ANY)
       return new InstanceType(this.#global.get_class(name))
     }
     
@@ -396,43 +409,14 @@ export class Validator {
   }
   
   
-  #infer(typ, expr) {
-    if(!expr) return typ
+  #cast(from, to) {
+    console.log(from.class?.name, to.class?.name)
     
-    if (typ) 
-      if (expr.typ) {
-        if (!expr.typ.isAssignableTo(typ))
-          this.#error(`${expr.typ} is not assignable to ${typ}`, expr)
-      } else {
-        expr.typ = typ
-        if (expr.type == 'array') this.#infer_array(typ, expr)
-      }
-    else
-      if (expr.typ) typ = expr.typ
-      else this.#error('cannot infer type', expr)
-      
-    return typ
-  }
-  
-  #infer_array(typ, arr) {
-    if(typ.kind != 'array') return this.#error(`cannot infer array`, arr)
-    
-    arr.values = arr.values.map(value => {
-      const val = this.#checkExpr(value)
-      this.#infer(typ.type, val)
-      return val
-    })
-  }
-  
-  #infer_params(param_list, args) {
-    const params = param_list.params
-    
-    while(args.length) {
-      const arg = args.shift()
-      const param = params.shift()
-      
-      if(!param) return false
+    if(nums.includes(from.class?.name) && nums.includes(to.class?.name)) {
+      return true
     }
+    
+    return false
   }
   
   

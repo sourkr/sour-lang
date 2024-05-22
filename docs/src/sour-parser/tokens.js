@@ -169,7 +169,7 @@ export class Tokenizer {
     
     str += this.#stream.next() + this.#stream.next()
     
-    return token('char', str, start, this.#stream.next())
+    return token('char', str, start, this.#stream.pos())
   }
 }
 

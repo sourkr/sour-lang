@@ -34,7 +34,8 @@ export class Parser {
       
       case 'num' :
       case 'str' :
-        return this.#mayOp(this.#nextToken())
+      case 'char' :
+        return this.#mayAs(this.#mayOp(this.#nextToken()))
       
       case 'eof': return null
       case 'err': return this.#nextToken()
@@ -444,6 +445,15 @@ export class Parser {
     return left
   }
   
+  #mayAs(expr) {
+    if(!this.#isKeyword('as')) return expr
+    
+    const kw = this.#nextToken()
+    const castType = this.#parseType()
+    
+    return { type: 'as', expr, kw, castType }
+  }
+  
   // type
   #parseType() {
     if(!this.#isIdent())
@@ -535,6 +545,10 @@ function unexpected(token, type, data) {
 
 function error(msg, token) {
   return { type: 'err', msg, start: token?.start, end: token?.end }
+}
+
+function ret_err(err, type, data) {
+  return { type, err, ...data }
 }
 
 function operator(left, right, isEquals, ...ops) {
