@@ -53,8 +53,7 @@ export class Validator {
   }
   
   #checkExpr(expr) {
-    // console.log(expr)
-    switch (expr.type) {
+    switch (expr?.type) {
       case 'call': return this.#checkCall(expr)
       case 'str': return this.#checkStr(expr)
       case 'num': return this.#checkNum(expr)
@@ -65,8 +64,9 @@ export class Validator {
       case 'dot': return this.#checkDot(expr)
       case 'op': return this.#checkOp(expr)
       case 'as': return this.#checkAs(expr)
+      case 'neg': return this.#checkNeg(expr)
       
-      default: this.#error(`unexpected symbol`, expr)
+      default: return this.#error(`unexpected symbol`, expr, {...expr, typ: ANY})
     }
   }
   
@@ -217,7 +217,9 @@ export class Validator {
     
     const args = call.args.map(arg => this.#checkExpr(arg))
     const typeArgs = args.map(arg => arg.typ)
-    // console.log(typeArgs)
+    
+    console.log(args)
+    
     if(!this.#global.has_fun(name, typeArgs)) {
       const funs = this.#global.get_functions(name)
       const errors = []
@@ -228,7 +230,6 @@ export class Validator {
     }
     
     const params = this.#global.get_fun_params(name, typeArgs)
-  /** @param name { string } */
     const typ = this.#global.get_fun(name, typeArgs)
     
     return { ...call, params, args, typ }
@@ -382,10 +383,21 @@ export class Validator {
     const typ = this.#checkType(as.castType)
     
     if(!this.#cast(expr.typ, typ)) {
-      this.#error(`cannot cast '${expr.typ}' to '${typ}`, as.kw)
+      this.#error(`cannot cast '${expr.typ}' to '${typ}`, as.kw, { ...as, expr, typ: ANY })
     }
     
     return { ...as, expr, typ }
+  }
+  
+  #checkNeg(neg) {
+    const val = this.#checkExpr(neg.value)
+    
+    if(!val.typ?.has_method?.('negative', []))
+      return this.#error(`cannot find operator (-${val.typ})`, neg.sign, { ...neg, val})
+    
+    const typ = val.typ.get_method('negative', []) 
+    
+    return { ...neg, val, typ }
   }
   
   // #checkOpEquals() {}
@@ -410,8 +422,6 @@ export class Validator {
   
   
   #cast(from, to) {
-    console.log(from.class?.name, to.class?.name)
-    
     if(nums.includes(from.class?.name) && nums.includes(to.class?.name)) {
       return true
     }

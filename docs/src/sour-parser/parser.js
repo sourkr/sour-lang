@@ -239,7 +239,7 @@ export class Parser {
     switch (true) {
       case this.#isPunc('('): return this.#parseCall(ident)
       case this.#isPunc('='): return this.#parseAssign(ident)
-      default: return this.#mayEqOp(this.#mayDot(ident))
+      default: return this.#mayAs(this.#mayEqOp(this.#mayDot(ident)))
     }
   }
   
@@ -247,6 +247,7 @@ export class Parser {
     switch (true) {
       case this.#isPunc('<'): return this.#parseEle()
       case this.#isPunc('['): return this.#parseArray()
+      case this.#isPunc('-'): return this.#parseNeg()
       default: return error(`unexpected token ${stringify(this.#peekToken())}`, this.#nextToken())
     }
   }
@@ -306,6 +307,13 @@ export class Parser {
   #mayCall(access) {
     if(this.#isPunc('(')) return this.#parseCall(access)
     return access
+  }
+  
+  #parseNeg() {
+    const sign = this.#nextToken()
+    const value = this.#parseExpr()
+    
+    return { type: 'neg', sign, value }
   }
   
   #parseAssign(name) {

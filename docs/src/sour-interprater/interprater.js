@@ -187,6 +187,11 @@ export class Interprater {
       if (name == 'byte') return byte(value.value)
       if (name == 'int') return int(value.value)
     }
+    
+    if(expr.type == 'neg') {
+      const val = this.#interprateExpr(expr.val)
+      return val.get_method('negative', '()')(val)
+    }
   }
   
   #error({ msg, start }) {

@@ -1,4 +1,4 @@
-const puncs = '{:}[,](<=>)+-*&|.?;'
+const puncs = '{:}[,](<=>)+*&|.?;'
 
 const isDigit = c => /\d/.test(c)
 const isIdent = c => /[a-zA-Z_]/.test(c)
@@ -80,6 +80,7 @@ export class Tokenizer {
       case isDigit(c)       : return this.#parseNum(start)
       case isIdent(c)       : return token('ident', this.#readWhile(isIdent), start, this.#stream.pos())
       case c == '/'         : return this.#parseSlash(start)
+      case c == '-'         : return this.#parseMinus(start)
       case puncs.includes(c): return token('punc', this.#stream.next(), start, this.#stream.pos())
       case c == '"'         : return this.#parseStr(start)
       case c == "'"         : return this.#parseChar(start)
@@ -124,6 +125,18 @@ export class Tokenizer {
     }
     
     return token('punc', '/', start, this.#stream.pos())
+  }
+  
+  #parseMinus(start) {
+    this.#stream.next()
+    
+    if(/\d/.test(this.#stream.peek())) {
+      const num = this.#parseNum(start)
+      num.value = '-' + num.value
+      return num
+    }
+    
+    return token('punc', '-', start, this.#stream.pos())
   }
   
   /**

@@ -36,10 +36,15 @@ export class Liner {
       this.lint_type(stylable, stmt.castType)
     }
     
+    if(stmt.type == 'neg') {
+      this.lint_tok(stylable, stmt.sign, violet)
+      this.lint(stylable, stmt.val)
+    }
+    
     if(stmt.type == 'str') this.lint_tok(stylable, stmt, green)
     if(stmt.type == 'char') this.lint_tok(stylable, stmt, green)
     if(stmt.type == 'int') this.lint_tok(stylable, stmt, violet)
-    if(stmt.type == 'int') this.lint_tok(stylable, stmt, violet)
+    if(stmt.type == 'float') this.lint_tok(stylable, stmt, violet)
   }
   
   static lint_type(stylable, type) {

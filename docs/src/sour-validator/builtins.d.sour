@@ -8,6 +8,8 @@ class int {
   fun plus(n: int): int
   fun plus(n: str): str
   
+  fun negative(): int
+  
   fun str(): str
 }
 

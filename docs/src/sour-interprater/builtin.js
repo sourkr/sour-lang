@@ -33,6 +33,8 @@ export const bool = create.bind(BOOL)
   INT.define_method('plus', '(int)', (self, right) => int(self.value + right.value))
   INT.define_method('plus', '(str)', (self, right) => str(self.value + right.value))
   
+  INT.define_method('negative', '()', (self, right) => int(-self.value))
+  
   INT.define_method('str', '()', self => self.value + '')
   
   BUILTIN.classes.set('int', INT)
