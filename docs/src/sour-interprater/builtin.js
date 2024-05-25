@@ -15,38 +15,38 @@ export const bool = create.bind(BOOL)
 
 // byte
 {
-  BYTE.define_method('constructor', '', (self, value) => self.value = value << 24 >> 24)
+  BYTE.def_meth('constructor', '', (self, value) => self.value = value << 24 >> 24)
 
-  BYTE.define_method('str', '()', self => self.value + '')
+  BYTE.def_meth('str', '()', self => self.value + '')
 
   BUILTIN.classes.set('byte', BYTE)
 }
 
 // int
 {
-  INT.define_method('constructor', '', (self, value) => self.value = value)
+  INT.def_meth('constructor', '', (self, value) => self.value = value)
   
-  INT.define_method('equals', '(int)', (self, right) => bool(self.value === right.value))
+  INT.def_meth('equals', '(int)', (self, right) => bool(self.value === right.value))
   
-  INT.define_method('less_than', '(int)', (self, right) => bool(self.value < right.value))
+  INT.def_meth('less_than', '(int)', (self, right) => bool(self.value < right.value))
   
-  INT.define_method('plus', '(int)', (self, right) => int(self.value + right.value))
-  INT.define_method('plus', '(str)', (self, right) => str(self.value + right.value))
+  INT.def_meth('plus', '(int)', (self, right) => int(self.value + right.value))
+  INT.def_meth('plus', '(str)', (self, right) => str(self.value + right.value))
   
-  INT.define_method('negative', '()', (self, right) => int(-self.value))
+  INT.def_meth('negative', '()', (self, right) => int(-self.value))
   
-  INT.define_method('str', '()', self => self.value + '')
+  INT.def_meth('str', '()', self => self.value + '')
   
   BUILTIN.classes.set('int', INT)
 }
 
 // bool
 {
-  BOOL.define_method('constructor', '', (self, value) => self.value = value)
+  BOOL.def_meth('constructor', '', (self, value) => self.value = value)
   
-  BOOL.define_method('plus', '(str)', (self, right) => str(self.value + right.value))
+  BOOL.def_meth('plus', '(str)', (self, right) => str(self.value + right.value))
   
-  BOOL.define_method('str', '()', self => self.value + '')
+  BOOL.def_meth('str', '()', self => self.value + '')
   
   BUILTIN.classes.set('bool', BOOL)
 }
@@ -54,12 +54,12 @@ export const bool = create.bind(BOOL)
 
 // str
 {
-  STR.define_method('constructor', '', (self, value) => self.value = value)
+  STR.def_meth('constructor', '', (self, value) => self.value = value)
   
-  STR.define_method('plus', '(int)', (self, right) => str(self.value + right.value))
-  STR.define_method('plus', '(str)', (self, right) => str(self.value + right.value))
+  STR.def_meth('plus', '(int)', (self, right) => str(self.value + right.value))
+  STR.def_meth('plus', '(str)', (self, right) => str(self.value + right.value))
   
-  STR.define_method('str', '()', self => self.value)
+  STR.def_meth('str', '()', self => self.value)
   
   BUILTIN.classes.set('str', STR)
 }
@@ -70,21 +70,21 @@ export const bool = create.bind(BOOL)
 {
   const ARRAY = new Class()
   
-  ARRAY.define_method('constructor', '', (self, array) => {
+  ARRAY.def_meth('constructor', '', (self, array) => {
     self.array = array
     self.constants.set('len', array.length)
   })
   
-  ARRAY.define_method('at', '(int)', (self, index) => self.array.at(index))
-  ARRAY.define_method('at', '(int,T)', (self, index, value) => value < 0 ? self.array[array.length + value] = value : self.array[index] = value)
+  ARRAY.def_meth('at', '(int)', (self, index) => self.array.at(index))
+  ARRAY.def_meth('at', '(int,T)', (self, index, value) => value < 0 ? self.array[array.length + value] = value : self.array[index] = value)
   
-  ARRAY.define_method('str', '()', self => `[${self.array}]`)
+  ARRAY.def_meth('str', '()', self => `[${self.array}]`)
   
   BUILTIN.classes.set('array', ARRAY)
 }
 
 function create(value) {
   const instance = this.instance()
-  instance.get_method('constructor', '')(instance, value)
+  instance.get_meth('constructor', '')(instance, value)
   return instance
 }

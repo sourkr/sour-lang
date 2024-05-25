@@ -1,159 +1,115 @@
-export class Scope {
-  symbols = new Map()
-  parent
-  
-  constructor(parent) {
-    this.parent = parent
-  }
-  
-  define(name, value) {
-    this.symbols.set(name, value)
-  }
-  
-  set(name, value) {
-    if(this.symbols.has(name)) this.symbols.set(name, value)
-    else if(this.parent?.has(name)) this.parent.set(name, value)
-    else this.symbols.set(name, value)
-  }
-  
-  has(name) {
-    return this.symbols.has(name) || this.parent?.has(name) || false
-  }
-  
-  get(name) {
-    if(this.symbols.has(name)) return this.symbols.get(name)
-    if(this.parent) return this.parent.get(name)
-  }
-  
-  deepClone() {
-    const scope = new Scope()
-    scope.symbols = new Map(this.symbols)
-    scope.parent = this.parent?.deepClone()
-    return scope
-  }
-  
-  async toString() {
-    const entries = [...this.symbols.entries()]
-      .map(async ([key, value]) => {
-        if(typeof value == 'function') return `${key}: <Function>`
-        if(this === value) return `${key}: <This>`
-        if(value instanceof Scope) return `${key}: ${await value.str()}`
-        return `${key}: ${value}`
-      })
-    
-    const awaited = await Promise.all(entries)
-    
-    return `{ ${awaited.join(', ')} }`
-  }
-  
-  get all() {
-    return Object.fromEntries(this.symbols)
-  }
-  
-  async str() {
-    if(this.has('str')) return await this.get('str')()
-    return await this.toString()
-  }
-}
-
-
 export class Class {
-  methods = new Map()
+  vars = new Map()
+  meths = new Map()
   
   instance() {
     return new Instance(this)
   }
   
-  define_method(name, params, fun) {
-    if (!this.methods.has(name)) this.methods.set(name, new Map())
-    this.methods.get(name).set(params, fun)
+  // vars
+  def_var(name, expr) {
+    this.vars.set(name, expr)
+  }
+  
+  get_vars() {
+    return this.vars
+  }
+  
+  def_meth(name, params, fun) {
+    if (!this.meths.has(name)) this.meths.set(name, new Map())
+    this.meths.get(name).set(params, fun)
   }
 }
 
 export class Instance {
-  constants = new Map()
+  vars = new Map()
   
   constructor(cls) {
     this.class = cls
   }
   
-  get_method(name, params) {
-    return this.class.methods.get(name).get(params)
+  // vars
+  set_var(name, value) {
+    this.vars.set(name, value)
+  }
+  
+  get_var(name) {
+    return this.vars.get(name)
+  }
+  
+  get_meth(name, params) {
+    return this.class.meths.get(name).get(params)
   }
   
   toString() {
-    return this.get_method('str', '()')(this)
+    return this.get_meth('str', '()')(this)
   }
 }
 
 
 export class BuiltinScope {
-  /** @type { Map<String, any> } */
-  variables = new Map()
-  
-  /** @type { Map<String, ((...args: any[]) => any)[]> } */
-  functions = new Map()
-  
+  vars = new Map()
+  funs = new Map()
   classes = new Map()
   
-  /**
-   * @param name { string }
-   * @param value { any }
-   */
-  define_variable(name, value) {
-    this.variables.set(name, value)
+  def_var(name, value) {
+    this.vars.set(name, value)
   }
   
-  /** @param name { string } */
-  get_variable(name) {
-    return this.variables.get(name)
+  get_var(name) {
+    return this.vars.get(name)
   }
   
-  /**
-   * @param name { string }
-   * @param value { any }
-   */
-  set_variable(name, value) {
-    this.variables.set(name, value)
+  set_var(name, value) {
+    this.vars.set(name, value)
   }
   
   
-  /** 
-   * @param name { string }
-   * @param params { string }
-   * @param fun { (...args: any[]) => any }
-   */
-  define_function(name, params, fun) {
-    if(!this.functions.has(name)) this.functions.set(name, new Map())
-    this.functions.get(name).set(params, fun)
+  def_fun(name, params, fun) {
+    if(!this.funs.has(name)) this.funs.set(name, new Map())
+    this.funs.get(name).set(params, fun)
   }
   
-  /** 
-   * @param name { string }
-   * @param params { string }
-   * @param index { number }
-   */
-  get_function(name, params) {
-    return this.functions.get(name).get(params)
+  get_fun(name, params) {
+    return this.funs.get(name).get(params)
   }
 }
 
-export class Float {
-  constructor(val) {
-    this.value = val
+export class GlobalScope {
+  vars = new Map()
+  funs = new Map()
+  classes = new Map()
+  
+  constructor(builtins) {
+    this.builtins = builtins
   }
   
-  toString() {
-    return Number.isInteger(this.value) ? this.value + '.0' : this.value
-  }
-}
-
-export class Char {
-  constructor(val) {
-    this.value = val
+  // vars
+  def_var(name, val) {
+    this.vars.set(name, val)
   }
   
-  toString() {
-    return String.fromCharCode(this.value)
+  get_var(name) {
+    return this.vars.get(name)
+  }
+  
+  
+  // funs
+  def_fun(name, params, fun) {
+    this.builtins.def_fun(name, params, fun)
+  }
+  
+  get_fun(name, params) {
+    return this.builtins.get_fun(name, params)
+  }
+  
+  
+  // classes
+  def_class(name, cls) {
+    this.classes.set(name, cls)
+  }
+  
+  get_class(name) {
+    return this.classes.get(name)
   }
 }

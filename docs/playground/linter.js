@@ -25,6 +25,13 @@ export class Liner {
       this.lint(stylable, stmt.val)
     }
     
+    if (stmt.type == 'class') {
+      this.lint_tok(stylable, stmt.kw, red)
+      // this.lint_type(stylable, stmt.valType)
+      // this.lint_tok(stylable, stmt.name, stmt.typ?.usage ? 'black' : gray)
+      stmt.body?.forEach(stmt => this.lint(stylable, stmt))
+    }
+    
     if(stmt.type == 'call') {
       this.lint_tok(stylable, stmt.access, blue)
       stmt.args.forEach(arg => this.lint(stylable, arg))
@@ -39,6 +46,13 @@ export class Liner {
     if(stmt.type == 'neg') {
       this.lint_tok(stylable, stmt.sign, violet)
       this.lint(stylable, stmt.val)
+    }
+    
+    if (stmt.type == 'new') {
+      this.lint_tok(stylable, stmt.kw, red)
+      // this.lint_type(stylable, stmt.valType)
+      // this.lint_tok(stylable, stmt.name, stmt.typ?.usage ? 'black' : gray)
+      // this.lint(stylable, stmt.val)
     }
     
     if(stmt.type == 'str') this.lint_tok(stylable, stmt, green)

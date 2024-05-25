@@ -1,12 +1,12 @@
 import { Validator } from '../sour-validator/validator.js';
-import { BUILTIN, byte, int } from './builtin.js';
-import { BuiltinScope, Char, Float } from './scope.js';
+import { BUILTIN, byte, int, str } from './builtin.js';
+import { GlobalScope, Class } from './scope.js';
 import { Stream } from './stream.js';
 
 const nums = [ 'byte', 'short', 'int', 'long' ]
 
 export class Interprater {
-  #global = BUILTIN
+  #global = new GlobalScope(BUILTIN)
   // #exports = new Scope()
   #file = 'main.sour'
   #root = '/'
@@ -15,7 +15,7 @@ export class Interprater {
   stream = new Stream()
   
   constructor() {
-    this.#global.define_function('print', '(...any)', (...args) => {
+    this.#global.def_fun('print', '(...any)', (...args) => {
       this.stream.write(args.map(e => {
         if(Array.isArray(e)) return `[${e}]`
         return e + ""
@@ -34,7 +34,7 @@ export class Interprater {
   interprateCode(code) {
     const validator = new Validator(code)
     const ast = validator.validate()
-    // console.log(ast)
+    
     if(ast.errors.length) {
       ast.errors.map(err => {
         if(!err.start) {
@@ -62,10 +62,23 @@ export class Interprater {
       if(stmt.val) value = this.#interprateExpr(stmt.val)
       else value = getDefault(stmt.valType)
       
-      this.#global.define_variable(stmt.name.value, value)
+      this.#global.def_var(stmt.name.value, value)
     }
     
-    if (stmt.type == 'const') this.#global.define_variable(stmt.name.value, this.#interprateExpr(stmt.val))
+    if (stmt.type == 'const') this.#global.def_var(stmt.name.value, this.#interprateExpr(stmt.val))
+    
+    if (stmt.type == 'class') {
+      const name = stmt.name.value
+      const cls = new Class()
+      this.#global.def_class(name, cls)
+      
+      stmt.body.forEach(stmt => {
+        if(stmt.type == 'var') {
+          const name = stmt.name.value
+          cls.def_var(name, stmt.val)
+        }
+      })
+    }
     
     if (stmt.type == 'if') {
       if(this.#interprateExpr(stmt.condition).value) this.#interprateBody(stmt.body)
@@ -92,7 +105,7 @@ export class Interprater {
     }
     
     if (stmt.type == 'fun') {
-      this.#global.define_function(stmt.name.value, stmt.params, (...args) => {
+      this.#global.def_fun(stmt.name.value, stmt.params, (...args) => {
         this.#interprateBody(stmt.body)
       })
     }
@@ -111,16 +124,9 @@ export class Interprater {
   #interprateExpr(expr) {
     if(expr == null) return
     
-    if(expr.type == 'int' || expr.type == 'str') {
-      const cls = this.#global.classes.get(expr.type)
-      const instance = cls.instance()
-      
-      instance.get_method('constructor', '')(instance, expr.val)
-      return instance
-    }
-    
-    if(expr.type == 'float') return new Float(expr.val)
-    if(expr.type == 'double') return new Float(expr.val)
+    if(expr.type == 'int') return int(expr.val)
+    if(expr.type == 'str') return str(expr.val)
+    if(expr.type == 'float') return float(expr.val)
     if(expr.type == 'char') return new Char(expr.val.charCodeAt(0))
     
     if(expr.type == 'ident') {
@@ -131,7 +137,7 @@ export class Interprater {
         case 'false': return false
       }
       
-      return this.#global.get_variable(name)
+      return this.#global.get_var(name)
     }
     
     if(expr.type == 'call') {
@@ -142,7 +148,7 @@ export class Interprater {
         return left.class.methods.get(expr.access.right.value)[expr.index](left, ...args)
       }
       
-      this.#global.get_function(expr.access.value, expr.params)(...args)
+      this.#global.get_fun(expr.access.value, expr.params)(...args)
     }
     
     if(expr.type == 'assign') {
@@ -160,7 +166,7 @@ export class Interprater {
     
     if (expr.type == 'dot') {
       const left = this.#interprateExpr(expr.left)
-      return left.constants.get(expr.right.value)
+      return left.get_var(expr.right.value)
     }
     
     if (expr.type == 'op') {
@@ -191,6 +197,16 @@ export class Interprater {
     if(expr.type == 'neg') {
       const val = this.#interprateExpr(expr.val)
       return val.get_method('negative', '()')(val)
+    }
+    
+    if(expr.type == 'new') {
+      const name = expr.name.value
+      const cls = this.#global.get_class(name)
+      const ins = cls.instance()
+      
+      cls.get_vars().forEach((expr, name) => ins.set_var(name, this.#interprateExpr(expr)))
+      
+      return ins
     }
   }
   

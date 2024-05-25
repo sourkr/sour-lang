@@ -23,9 +23,9 @@ export class Type {
 }
 
 export class ClassType extends Type {
-  constants = new Map()
-  variables = new Map()
-  methods = new Map()
+  consts = new Map()
+  vars = new Map()
+  meths = new Map()
   
   constructor(name, generic, extend) {
     super('class')
@@ -51,11 +51,15 @@ export class ClassType extends Type {
     return this.name == 'unknown'
   }
   
-  define_method(name, params, ret) {
-    if(!this.methods.has(name))
-      this.methods.set(name, new Map())
+  def_var(name, type) {
+    this.vars.set(name, type)
+  }
+  
+  def_meth(name, params, ret) {
+    if(!this.meths.has(name))
+      this.meths.set(name, new Map())
     
-    this.methods.get(name).set(params, ret)
+    this.meths.get(name).set(params, ret)
   }
   
   toString() {
@@ -74,11 +78,13 @@ export class InstanceType extends Type {
     const gPair = new Map()
     cls.generic.forEach((name, index) => gPair.set(name, generic[index]))
     
-    this.constants = new Map(cls.constants)
-    this.variables = new Map(cls.variables)
-    this.methods = new Map()
+    // console.log(cls.name, cls.vars)
     
-    cls.methods.forEach((old_map, name) => {
+    this.consts = new Map(cls.consts)
+    this.vars = new Map(cls.vars)
+    this.meths = new Map()
+    
+    cls.meths.forEach((old_map, name) => {
       const generic = type => type.kind == 'generic' ? type.assigned(gPair.get(type.name)) : type
       
       const map = new Map(old_map.entries()
@@ -87,7 +93,7 @@ export class InstanceType extends Type {
           generic(entry[1])
         ]))
       
-      this.methods.set(name, map)
+      this.meths.set(name, map)
     })
   }
   
@@ -104,6 +110,21 @@ export class InstanceType extends Type {
   
   equals(type) {
     return type.kind == 'instance' && type.cls == this.cls
+  }
+  
+  // vars
+  get_vars() {
+    return this.vars
+  }
+  
+  has_field(name) {
+    return this.consts.has(name)
+      || this.vars.has(name)
+  }
+  
+  get_field(name) {
+    return this.consts.get(name)
+      || this.vars.get(name)
   }
   
   has_method(name, args) {
@@ -331,7 +352,7 @@ export class VarType extends Type {
   }
   
   toHTML() {
-    return `<span style="color:${red}">var</span> ${this.name}: ${this.type.toHTML()}`
+    return `<span style="color:${red}">var</span> ${this.name}: ${this.type?.toHTML()}`
   }
 }
 
@@ -437,6 +458,7 @@ export class GlobalScope {
   #builins
   
   vars = new Map()
+  classes = new Map()
   
   constructor(builins) {
     this.#builins = builins
@@ -483,12 +505,18 @@ export class GlobalScope {
   
   
   // classes
+  def_class(name, cls) {
+    return this.classes.set(name, cls)
+  }
+  
   has_class(name) {
-    return this.#builins.has_class(name)
+    return this.classes.has(name)
+      || this.#builins.has_class(name)
   }
   
   get_class(name) {
-    return this.#builins.get_class(name)
+    return this.classes.get(name)
+      || this.#builins.get_class(name)
   }
   
   get_classes() {
@@ -498,6 +526,7 @@ export class GlobalScope {
   
   // all
   has(name) {
-    return this.#builins.has(name)
+    return this.has_class(name)
+      || this.#builins.has(name)
   }
 }

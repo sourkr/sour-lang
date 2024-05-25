@@ -33,8 +33,8 @@ export class DefinationValidator {
       const generic = cls.generic
       
       stmt.body.forEach(stmt => {
-        if (stmt.type == 'const') cls.constants.set(stmt.name.value, this.#checkType(stmt.value))
-        if (stmt.type == 'var') cls.variables.set(stmt.name.value, this.#checkType(stmt.value))
+        if (stmt.type == 'const') cls.consts.set(stmt.name.value, this.#checkType(stmt.value))
+        if (stmt.type == 'var') cls.vars.set(stmt.name.value, this.#checkType(stmt.value))
       
         if (stmt.type == 'fun') {
           const name = stmt.name.value
@@ -48,7 +48,7 @@ export class DefinationValidator {
       
           const ret = this.#checkType(stmt.ret, generic)
       
-          cls.define_method(name, params, ret)
+          cls.def_meth(name, params, ret)
         }
       })
     })

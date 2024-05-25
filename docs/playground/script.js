@@ -36,11 +36,23 @@ editor.oninput = () => {
   
   lastAST = ast
   Completer.complete(lastAST, editor)
+  
+  localStorage.setItem('playground', editor.value)
 }
 
 editor.onkeydown = ev => {
-  if(ev.key != 'i' || !ev.ctrlKey) return
-  InfoSeeker.seek(lastAST, editor)
+  if(ev.key == 'Tab') {
+    const index = editor.current_index
+    const left = editor.value.substring(0, index)
+    const right = editor.value.substring(index)
+    editor.value = left + '\t' + right
+    editor.current_index = index + 1
+    ev.preventDefault()
+  }
+  
+  if(ev.key != 'i' || !ev.ctrlKey) {
+    InfoSeeker.seek(lastAST, editor)
+  }
 }
 
 run.onclick = async () => {
@@ -60,6 +72,5 @@ function isInsideTok(index, tok, len) {
 }
 
 
-function seekInfo(stmt) {
-  
-}
+editor.value = localStorage.getItem('playground') || ''
+editor.dispatchEvent(new InputEvent('input'))

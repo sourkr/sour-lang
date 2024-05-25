@@ -172,6 +172,7 @@ export class SourEditor extends HTMLElement {
         const right = this.value.substring(index)
         
         this.value = left + comp.sufix + right
+        this.dispatchEvent(new InputEvent('input'))
         
         ev.preventDefault()
       }
@@ -221,10 +222,16 @@ export class SourEditor extends HTMLElement {
   set value(s) {
     this.#textarea.value = s.text || s
     this.#pre.innerHTML = s
+    this.#update()
   }
   
   get current_index() {
     return this.#textarea.selectionStart
+  }
+  
+  set current_index(index) {
+    this.#textarea.selectionStart = index
+    this.#textarea.selectionEnd = index
   }
   
   get current_line() {

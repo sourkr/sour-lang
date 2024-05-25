@@ -19,6 +19,7 @@ export class Parser {
       case this.#isKeyword('var'): return this.#parseVar()
       case this.#isKeyword('const'): return this.#parseConst()
       case this.#isKeyword('fun'): return this.#parseFun()
+      case this.#isKeyword('class'): return this.#parseClass()
       
       case this.#isKeyword('if'): return this.#parseIf()
       case this.#isKeyword('while'): return this.#parseWhile()
@@ -110,6 +111,18 @@ export class Parser {
     const body = this.#parseBlock()
     
     return { type: 'fun', name, body, ret }
+  }
+  
+  #parseClass() {
+    const kw = this.#nextToken()
+    
+    if(!this.#isIdent()) return unexpected(this.#nextToken(), 'class', { kw })
+    const name = this.#nextToken()
+    
+    const body = this.#parseBlock()
+    if(is_error(body)) return { type: 'class', kw, name, err: body }
+    
+    return { type: 'class', kw, name, body }
   }
   
   #parseIf() {
@@ -215,8 +228,9 @@ export class Parser {
   #parseBlock() {
     const body = []
     
-    this.#skip() // '{'
-      
+    if(!this.#isPunc('{')) return error(`unexpected token ${this.#peekToken().value}`, this.#nextToken())
+    this.#nextToken()
+    
     while (true) {
       if(this.#isPunc('}')) {
         this.#skip() // '}'
@@ -224,8 +238,8 @@ export class Parser {
       }
       
       const stmt = this.#parseStmt()
-      body.push(stmt)
-      if(is_error(stmt)) return body
+      body.push(stmt || error(`unexpected token`))
+      if(is_error(stmt)) break 
     }
     
     return body
@@ -239,6 +253,7 @@ export class Parser {
     switch (true) {
       case this.#isPunc('('): return this.#parseCall(ident)
       case this.#isPunc('='): return this.#parseAssign(ident)
+      case ident.value == 'new': return this.#parseNew(ident)
       default: return this.#mayAs(this.#mayEqOp(this.#mayDot(ident)))
     }
   }
@@ -329,6 +344,13 @@ export class Parser {
     const value = this.#parseExpr()
     
     return { type: 'assign', name, value }
+  }
+  
+  #parseNew(kw) {
+    if(!this.#isIdent()) return unexpected(this.#nextToken(), 'new', { kw })
+    const name = this.#nextToken()
+    
+    return { type: 'new', kw, name }
   }
   
   #mayDot(left) {

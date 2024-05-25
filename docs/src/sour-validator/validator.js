@@ -37,11 +37,13 @@ export class Validator {
   
   #checkStmt(stmt) {
     if(!stmt) return null
+    if(stmt.err) this.#err(stmt.err)
     
     switch (stmt.type) {
       case 'var': return this.#checkVar(stmt)
       case 'const': return this.#checkConst(stmt)
       case 'fun': return this.#checkFun(stmt)
+      case 'class': return this.#checkClass(stmt)
       case 'if': return this.#checkIf(stmt)
       case 'while': return this.#checkWhile(stmt)
       case 'for': return this.#checkFor(stmt)
@@ -53,6 +55,8 @@ export class Validator {
   }
   
   #checkExpr(expr) {
+    if(expr?.err) this.#err(expr.err)
+    
     switch (expr?.type) {
       case 'call': return this.#checkCall(expr)
       case 'str': return this.#checkStr(expr)
@@ -65,6 +69,7 @@ export class Validator {
       case 'op': return this.#checkOp(expr)
       case 'as': return this.#checkAs(expr)
       case 'neg': return this.#checkNeg(expr)
+      case 'new': return this.#checkNew(expr)
       
       default: return this.#error(`unexpected symbol`, expr, {...expr, typ: ANY})
     }
@@ -73,8 +78,6 @@ export class Validator {
   
   // stmt
   #checkVar(v) {
-    if(v.err) this.#err(v.err)
-    
     let val
     let typ
     
@@ -140,6 +143,37 @@ export class Validator {
     this.#global.define_function(name, params, ANY)
     
     return { ...fun, body, params: params.toString() }
+  }
+  
+  #checkClass(stmt) {
+    const name = stmt.name?.value
+    
+    if(this.#global.has(name)) this.#error(`cannot redeclare symbol '${name}'`, stmt.name)
+    
+    const cls = new ClassType(name, [])
+    this.#global.def_class(name, cls)
+    
+    const body = stmt.body?.map(stmt => {
+      if(!stmt) return
+      
+      if(stmt.type == 'err') {
+        this.#err(stmt)
+        return
+      }
+      
+      if(stmt.type == 'var') {
+        const name = stmt.name?.value
+        const val = this.#checkExpr(stmt.value)
+        
+        cls.def_var(name, val.typ)
+        
+        return { ...stmt, val }
+      }
+      
+      return this.#unexpected_symbol(stmt)
+    })
+    
+    return { ...stmt, body }
   }
   
   #checkIf(s) {
@@ -217,8 +251,6 @@ export class Validator {
     
     const args = call.args.map(arg => this.#checkExpr(arg))
     const typeArgs = args.map(arg => arg.typ)
-    
-    console.log(args)
     
     if(!this.#global.has_fun(name, typeArgs)) {
       const funs = this.#global.get_functions(name)
@@ -337,12 +369,16 @@ export class Validator {
   
   #checkDot(dot) {
     const left = this.#checkExpr(dot.left)
-    // console.log(left.typ.toString())
-    const name = dot.right.value
-    // console.log(left.typ)
-    if(!left.typ.constants.has(name)) this.#error(`connot find field ${name} in ${left.typ}`, dot.right)
+    const name = dot.right?.value
     
-    const typ = left.typ.constants.get(name) || ANY
+    
+    if(left.typ.kind == 'special' && left.typ.type == 'any') {
+      return { ...dot, left, typ: ANY} 
+    }
+    
+    if(!left.typ.has_field(name)) this.#error(`connot find field ${name} in ${left.typ}`, dot.right)
+    
+    const typ = left.typ.get_field(name) || ANY
     
     return { ...dot, left, typ }
   }
@@ -402,6 +438,16 @@ export class Validator {
   
   // #checkOpEquals() {}
   
+  #checkNew(n) {
+    const name = n.name?.value
+    
+    if(!this.#global.has_class(name))
+      return this.#error(`cannot find class '${name}'`, n.name, { n, typ: ANY })
+    
+    const typ = new InstanceType(this.#global.get_class(name))
+    
+    return { ...n, typ }
+  }
   
   #checkType(expr) {
     if(!expr) return ANY
@@ -430,6 +476,7 @@ export class Validator {
   }
   
   
+  // error
   #err(err) {
     this.#ast.errors.push(err)
   }
@@ -437,6 +484,26 @@ export class Validator {
   #error(msg, token, ret) {
     this.#err(error(msg, token))
     return { ...ret, typ: ANY }
+  }
+  
+  #unexpected_symbol(symbol) {
+    let name
+    let start
+    let end
+    
+    if(symbol.type == 'ident') {
+      name = 'idnetifier',
+      start = symbol.start
+      end = symbol.end
+    }
+    
+    this.#err({
+      type: 'err',
+      msg: `unexpected symbol ${name}`,
+      start, end
+    })
+    
+    return symbol
   }
 }
 

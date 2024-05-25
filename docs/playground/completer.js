@@ -30,6 +30,15 @@ export class Completer {
         if(list.length) return list
       }
       
+      if (stmt.type == 'dot') {
+        if (isInsideTok(index, stmt.right, len)) {
+          
+          return [
+            ...this.listFields(stmt.right.value.substring(0, index - stmt.right.start.index), stmt.left.typ)
+          ]
+        }
+      }
+      
       if (stmt.type == 'ident') {
         if (isInsideTok(index, stmt, len)) {
           return this.listGlobals(stmt.value.substring(0, index - stmt.start.index))
@@ -51,15 +60,13 @@ export class Completer {
   }
   
   static listKw(prefix) {
-    return ['var']
+    return ['var', 'class', 'new', 'as']
       .filter(kw => kw.startsWith(prefix))
       .map(kw => new Completion(prefix, kw.substring(prefix.length)))
   }
   
   static listVars(prefix) {
     const completions = []
-    
-    // console.log(this.global.get_vars())
     
     this.global.get_vars().forEach((type, name) => {
       if(!name) return
@@ -96,6 +103,19 @@ export class Completer {
     
       const type = new InstanceType(cls).toHTML()
       completions.push(new Completion(prefix, name.substring(prefix.length), type))
+    })
+    
+    return completions
+  }
+  
+  static listFields(prefix, instance) {
+    const completions = []
+    
+    instance.get_vars().forEach((type, name) => {
+      if (!name.startsWith(prefix)) return
+      
+      const typ = `${instance.class.name}.${name}: ${type.toHTML()}`
+      completions.push(new Completion(prefix, name.substring(prefix.length), typ))
     })
     
     return completions
