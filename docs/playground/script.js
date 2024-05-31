@@ -50,7 +50,7 @@ editor.onkeydown = ev => {
     ev.preventDefault()
   }
   
-  if(ev.key != 'i' || !ev.ctrlKey) {
+  if(ev.key == 'i' && ev.ctrlKey) {
     InfoSeeker.seek(lastAST, editor)
   }
 }

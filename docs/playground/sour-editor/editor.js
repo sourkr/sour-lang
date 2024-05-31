@@ -73,6 +73,7 @@ const css = (`
     pointer-events: auto;
     box-shadow: 0 0 1px lightgrey;
     height: fit-content;
+    background: white;
     
     & div {
       padding-inline: 5px;
@@ -84,6 +85,8 @@ const css = (`
     pointer-events: auto;
     box-shadow: 0 0 1px lightgrey;
     padding: 5px;
+    background: white;
+    border-radius: 10px;
   }
   
   .completion {
@@ -143,8 +146,6 @@ export class SourEditor extends HTMLElement {
     this.#textarea.oninput = () => {
       this.#pre.innerText = this.#textarea.value
       this.#update()
-      
-      this.#completion.style.top = this.cursor_y + 'px'
     }
     
     this.#textarea.onkeydown = ev => {
@@ -172,10 +173,14 @@ export class SourEditor extends HTMLElement {
         const right = this.value.substring(index)
         
         this.value = left + comp.sufix + right
+        this.current_index = index + comp.sufix.length
+        
         this.dispatchEvent(new InputEvent('input'))
         
         ev.preventDefault()
       }
+      
+      this.#completion.style.top = this.cursor_y + 'px'
     }
   }
   

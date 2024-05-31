@@ -1,6 +1,6 @@
 import { Completion } from './sour-editor/completion.js';
 import { BUILTINS } from '../src/sour-validator/builtin.js';
-import { GlobalScope, FunctionType, VarType, InstanceType } from '../src/sour-validator/types.js';
+import { GlobalScope, FunctionType, VarType, InstanceType, MethodType } from '../src/sour-validator/types.js';
 
 export class Completer {
   static global = new GlobalScope(BUILTINS)
@@ -32,9 +32,9 @@ export class Completer {
       
       if (stmt.type == 'dot') {
         if (isInsideTok(index, stmt.right, len)) {
-          
           return [
-            ...this.listFields(stmt.right.value.substring(0, index - stmt.right.start.index), stmt.left.typ)
+            ...this.listFields(stmt.right.value.substring(0, index - stmt.right.start.index), stmt.left.typ),
+            ...this.listMeths(stmt.right.value.substring(0, index - stmt.right.start.index), stmt.left.typ)
           ]
         }
       }
@@ -43,6 +43,28 @@ export class Completer {
         if (isInsideTok(index, stmt, len)) {
           return this.listGlobals(stmt.value.substring(0, index - stmt.start.index))
         }
+      }
+      
+      if (stmt.type == 'class') {
+        const list = this.listBody(stmt.body, index, len)
+        if(list.length) return list
+      }
+      
+      if (stmt.type == 'fun') {
+        var list = this.listType(stmt.ret, index, len)
+        list.push(...this.listBody(stmt.body, index, len))
+        
+        if (list.length) return list
+      }
+    }
+    
+    return []
+  }
+  
+  static listType(type, index, len) {
+    if(type.type == 'instance') {
+      if(isInsideTok(index, type.name, len)) {
+        return this.listTypes(type.name.value.substring(0, index - type.name.start.index))
       }
     }
     
@@ -60,7 +82,7 @@ export class Completer {
   }
   
   static listKw(prefix) {
-    return ['var', 'class', 'new', 'as']
+    return ['var', 'class', 'new', 'as', 'fun']
       .filter(kw => kw.startsWith(prefix))
       .map(kw => new Completion(prefix, kw.substring(prefix.length)))
   }
@@ -79,12 +101,14 @@ export class Completer {
     return completions
   }
   
+  
   static listFuns(prefix) {
     const completions = []
     
     this.global.get_funs().forEach((funs, name) => {
+      if(!name.startsWith(prefix)) return
+        
       funs.forEach((ret, params) => {
-        if(!name.startsWith(prefix)) return
         
         const type = new FunctionType(name, params, ret).toHTML()
         completions.push(new Completion(prefix, name.substring(prefix.length), type, ret.info))
@@ -95,14 +119,16 @@ export class Completer {
   }
   
   static listTypes(prefix) {
-    const completions = []
+    const completions = ['any', 'void']
+      .filter(e => e.startsWith(prefix))
+      .map(e => new Completion(prefix, e.substring(prefix.length)))
     
     this.global.get_classes().forEach((cls, name) => {
       if (!name.startsWith(prefix)) return
       if (name == prefix) return
     
-      const type = new InstanceType(cls).toHTML()
-      completions.push(new Completion(prefix, name.substring(prefix.length), type))
+      // const type = new InstanceType(cls).toHTML()
+      completions.push(new Completion(prefix, name.substring(prefix.length)))
     })
     
     return completions
@@ -118,6 +144,21 @@ export class Completer {
       completions.push(new Completion(prefix, name.substring(prefix.length), typ))
     })
     
+    return completions
+  }
+  
+  static listMeths(prefix, instance) {
+    const completions = []
+  
+    instance.get_meths().forEach((meths, name) => {
+      if (!name.startsWith(prefix)) return
+        
+      meths.forEach((ret, params) => {
+        const type = new MethodType(instance.class, name, params, ret).toHTML()
+        completions.push(new Completion(prefix, name.substring(prefix.length), type))
+      })
+    })
+  
     return completions
   }
 }

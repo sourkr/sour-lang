@@ -1,5 +1,5 @@
 import { Parser } from '../sour-parser/parser.js';
-import { GlobalScope, ClassType, InstanceType, ParamList, ANY } from './types.js';
+import { GlobalScope, ClassType, InstanceType, ParamList, ANY, VOID } from './types.js';
 import { BUILTINS } from './builtin.js';
 
 const reserved = [ 'true', 'false', 'null', 'void' ]
@@ -170,6 +170,22 @@ export class Validator {
         return { ...stmt, val }
       }
       
+      if(stmt.type == 'fun') {
+        const name = stmt.name?.value
+        
+        if(name == 'constructor') {
+          
+        }
+        
+        const typ = this.#checkType(stmt.ret, true)
+        
+        const body = this.#checkBody(stmt.body)
+        
+        cls.def_meth(name, new ParamList([]), typ)
+        
+        return { ...stmt, body, typ }
+      }
+      
       return this.#unexpected_symbol(stmt)
     })
     
@@ -219,13 +235,13 @@ export class Validator {
       const left = this.#checkExpr(call.access.left)
       const name = call.access.right.value
       
-      if (!left.typ.methods.has(name))
+      if (!left.typ.has_meth(name))
         return this.#error(`cannot not find method ${name} in ${left.typ}`, call.access, call)
       
       const args = call.args.map(arg => this.#checkExpr(arg))
       const typeArgs = args.map(arg => arg.typ)
       
-      if (!left.typ.has_method(name, typeArgs)) {
+      if (!left.typ.has_meth(name, typeArgs)) {
         const funs = left.typ.methods.get(name)
         const errors = []
       
@@ -236,8 +252,8 @@ export class Validator {
       
       // console.log(Object.fromEntries(left.typ.methods.get('at')))
       
-      const params = left.typ.get_method_params(name, typeArgs)
-      const typ = left.typ.get_method(name, typeArgs)
+      const params = left.typ.get_meth_params(name, typeArgs)
+      const typ = left.typ.get_meth(name, typeArgs)
       const access = { ...call.access, left }
       
       return { ...call, access, params, args, typ }
@@ -449,14 +465,19 @@ export class Validator {
     return { ...n, typ }
   }
   
-  #checkType(expr) {
+  #checkType(expr, allow_void) {
+    console.log(ANY)
     if(!expr) return ANY
     if(expr.err) this.#err(expr.err)
     
     if(expr.type == 'instance') {
       const name = expr.name?.value
       if(!name) return ANY
-      if(name == 'void') return this.#error('type void is not allowed here', expr, ANY)
+      
+      if(name == 'void')
+        if(!allow_void) return this.#error('type void is not allowed here', expr.name, ANY)
+        else return VOID
+      
       if(!this.#global.has_class(name)) return this.#error(`${name} is not a type`, expr.name, ANY)
       return new InstanceType(this.#global.get_class(name))
     }
@@ -464,6 +485,8 @@ export class Validator {
     if(expr.type == 'array') {
       return new InstanceType(this.#global.get_class('array'), this.#checkType(expr.typ))
     }
+    
+    // if(expr.type == 'special')
   }
   
   
@@ -483,7 +506,8 @@ export class Validator {
   
   #error(msg, token, ret) {
     this.#err(error(msg, token))
-    return { ...ret, typ: ANY }
+    // return { ...ret, typ: ANY }
+    return ret
   }
   
   #unexpected_symbol(symbol) {

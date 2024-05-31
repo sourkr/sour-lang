@@ -127,17 +127,17 @@ export class InstanceType extends Type {
       || this.vars.get(name)
   }
   
-  has_method(name, args) {
-    if (!args) return this.methods.has(name)
-    if (!this.has_method(name)) return false
+  has_meth(name, args) {
+    if (!args) return this.meths.has(name)
+    if (!this.has_meth(name)) return false
   
-    return [...this.methods.get(name).keys()]
+    return [...this.meths.get(name).keys()]
       .some(params => params.isAssignableTo(args))
   }
   
-  get_method_params(name, args) {
+  get_meth_params(name, args) {
     
-    return [...this.methods.get(name).keys()]
+    return [...this.meths.get(name).keys()]
       .find(params => params.isAssignableTo(args))
       .toString(true)
       
@@ -147,9 +147,14 @@ export class InstanceType extends Type {
   
   }
   
-  get_method(name, args) {
-    return [...this.methods.get(name).entries()]
+  get_meth(name, args) {
+    return [...this.meths.get(name).entries()]
       .find(entry => entry[0].isAssignableTo(args))[1]
+  }
+  
+  get_meths(name) {
+    // console.log(this.cla)
+    return this.meths
   }
   
   toString() {
@@ -198,6 +203,39 @@ export class FunctionType extends Type {
   
   toHTML() {
     return `<span style="color:${red}">fun</span> <span style="color:${blue}">${this.name}</span>${this.params.toHTML()}: ${this.ret.toHTML()}`
+  }
+}
+
+export class MethodType extends Type {
+  constructor(cls, name, params, ret) {
+    super('method')
+    
+    this.class = cls
+    this.name = name
+    this.params = params
+    this.ret = ret
+  }
+  
+  isAssignableTo(type) {
+    if(type.kind != 'function') return false
+  }
+  
+  isParamsAssignableTo(args) {
+    if(args.length != this.params.length) return false
+    
+    for(let i = 0; i < this.params.length; i++) {
+      if(!args[i].isAssignableTo(this.params[i])) return false
+    }
+    
+    return true
+  }
+  
+  toParamsString() {
+    return `(${this.params.join(',')})`
+  }
+  
+  toHTML() {
+    return `<span style="color:${red}">fun</span> ${this.class.name}.<span style="color:${blue}">${this.name}</span>${this.params.toHTML()}: ${this.ret.toHTML()}`
   }
 }
 

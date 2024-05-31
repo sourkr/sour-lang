@@ -9,7 +9,7 @@ const gray = 'gray'
 export class Liner {
   static lintAST(stylable, ast, length) {
     ast.body.forEach(stmt => this.lint(stylable, stmt))
-    
+    // console.log(ast.body)
     ast.errors.forEach(err => {
       stylable.apply(new Error(err.start?.index ?? length - 1, err.end?.index ?? length))
     })
@@ -21,8 +21,14 @@ export class Liner {
     if (stmt.type == 'var') {
       this.lint_tok(stylable, stmt.kw, red)
       this.lint_type(stylable, stmt.valType)
-      this.lint_tok(stylable, stmt.name, stmt.typ?.usage ? 'black' : gray)
+      // this.lint_tok(stylable, stmt.name, stmt.typ?.usage ? 'black' : gray)
       this.lint(stylable, stmt.val)
+    }
+    
+    if (stmt.type == 'fun') {
+      this.lint_tok(stylable, stmt.kw, red)
+      this.lint_type(stylable, stmt.ret)
+      stmt.body?.forEach(stmt => this.lint(stylable, stmt))
     }
     
     if (stmt.type == 'class') {
@@ -69,8 +75,10 @@ export class Liner {
     }
   }
   
-  static lint_tok(stylable, tok, color) {
+  static lint_tok(stylable, tok, color, len) {
     if(!tok) return
+    if(!tok.start) return
+    
     stylable.apply(new Color(tok.start.index, tok.end.index, color))
   }
 }

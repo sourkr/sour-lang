@@ -102,15 +102,17 @@ export class Parser {
   }
   
   #parseFun() {
-    this.#skip() // 'fun'
+    const kw = this.#nextToken()
     
+    if (!this.#isIdent()) return unexpected(this.#nextToken(), 'fun', { kw })
     const name = this.#nextToken()
+    
     const params = this.#parseParams()
     this.#skip() // ':'
     const ret = this.#parseType()
     const body = this.#parseBlock()
     
-    return { type: 'fun', name, body, ret }
+    return { type: 'fun', kw, name, body, ret }
   }
   
   #parseClass() {
@@ -192,6 +194,7 @@ export class Parser {
   }
   
   #parseParams() {
+    if (!this.#isPunc('(')) return error(`expecting '(`, this.#nextToken())
     this.#skip() // '('
     
     const params = []
