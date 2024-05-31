@@ -173,6 +173,8 @@ export class Validator {
       if(stmt.type == 'fun') {
         const name = stmt.name?.value
         
+        const params = new ParamList([])
+        
         if(name == 'constructor') {
           
         }
@@ -181,9 +183,9 @@ export class Validator {
         
         const body = this.#checkBody(stmt.body)
         
-        cls.def_meth(name, new ParamList([]), typ)
+        cls.def_meth(name, params, typ)
         
-        return { ...stmt, body, typ }
+        return { ...stmt, body, typ, params: params.toString(true) }
       }
       
       return this.#unexpected_symbol(stmt)
@@ -466,7 +468,6 @@ export class Validator {
   }
   
   #checkType(expr, allow_void) {
-    console.log(ANY)
     if(!expr) return ANY
     if(expr.err) this.#err(expr.err)
     

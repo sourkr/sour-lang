@@ -73,9 +73,16 @@ export class Interprater {
       this.#global.def_class(name, cls)
       
       stmt.body.forEach(stmt => {
+        const name = stmt.name.value
+        
         if(stmt.type == 'var') {
-          const name = stmt.name.value
           cls.def_var(name, stmt.val)
+        }
+        
+        if (stmt.type == 'fun') {
+          cls.def_meth(name, stmt.params, () => {
+            this.#interprateBody(stmt.body)
+          })
         }
       })
     }
@@ -116,7 +123,6 @@ export class Interprater {
   #interprateBody(body) {
     for(let stmt of body) {
       if(stmt.type == 'return') return this.#interprateExpr(stmt.value, self)
-      
       this.#interprateStmt(stmt)
     }
   }
@@ -145,7 +151,8 @@ export class Interprater {
       
       if(expr.access.type == 'dot') {
         const left = this.#interprateExpr(expr.access.left)
-        return left.class.methods.get(expr.access.right.value)[expr.index](left, ...args)
+        // console.log(left.get_meth(expr.access.right.value, expr.params))
+        return left.get_meth(expr.access.right.value, expr.params)(left, ...args)
       }
       
       this.#global.get_fun(expr.access.value, expr.params)(...args)

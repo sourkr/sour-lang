@@ -39,6 +39,11 @@ export class Liner {
     }
     
     if(stmt.type == 'call') {
+      if(stmt.access.type == 'dot') {
+        // this.lint(stmt.left)
+        this.lint_tok(stylable, stmt.access.right, blue)
+      }
+      
       this.lint_tok(stylable, stmt.access, blue)
       stmt.args.forEach(arg => this.lint(stylable, arg))
     }
