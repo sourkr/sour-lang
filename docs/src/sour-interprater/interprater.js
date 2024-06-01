@@ -59,7 +59,7 @@ export class Interprater {
     if (stmt.type == 'var') {
       let value
       
-      if(stmt.val) value = this.#interprateExpr(stmt.val)
+      if(stmt.val) value = this.#interprateExpr(stmt.val, scope)
       else value = getDefault(stmt.valType)
       
       this.#global.def_var(stmt.name.value, value)
@@ -80,9 +80,10 @@ export class Interprater {
         }
         
         if (stmt.type == 'fun') {
+          console.log(name, stmt.params)
           cls.def_meth(name, stmt.params, (self, ...args) => {
             const mScope = new MethodScope(this.#global, self)
-            this.#interprateBody(stmt.body, mScope)
+            return this.#interprateBody(stmt.body, mScope)
           })
         }
       })
@@ -124,32 +125,31 @@ export class Interprater {
   #interprateBody(body, scope = this.#global) {
     // console.log(scope)
     for(let stmt of body) {
-      if(stmt.type == 'return') return this.#interprateExpr(stmt.value, self)
+      if(stmt.type == 'ret') return this.#interprateExpr(stmt.val, scope)
       this.#interprateStmt(stmt, scope)
     }
   }
   
   #interprateExpr(expr, scope) {
-    // console.log(scope)
-    if(expr == null) return
+    if (expr == null) return
     
-    if(expr.type == 'int') return int(expr.val)
-    if(expr.type == 'str') return str(expr.val)
-    if(expr.type == 'float') return float(expr.val)
-    if(expr.type == 'char') return new Char(expr.val.charCodeAt(0))
+    if (expr.type == 'str') return str(expr.val)
+    if (expr.type == 'float') return float(expr.val)
+    if (expr.type == 'int') return int(expr.val)
+    if (expr.type == 'char') return new Char(expr.val.charCodeAt(0))
     
-    if(expr.type == 'ident') {
+    if (expr.type == 'ident') {
       const name = expr.value
       
       switch (name) {
         case 'true': return true
         case 'false': return false
       }
-      console.log(scope)
+      
       return scope.get_var(name)
     }
     
-    if(expr.type == 'call') {
+    if (expr.type == 'call') {
       const args = expr.args.map(arg => this.#interprateExpr(arg, scope))
       
       if(expr.access.type == 'dot') {
@@ -161,7 +161,7 @@ export class Interprater {
       this.#global.get_fun(expr.access.value, expr.params)(...args)
     }
     
-    if(expr.type == 'assign') {
+    if (expr.type == 'assign') {
       this.#global.set_variable(expr.name.value, this.#interprateExpr(expr.val))
     }
     
@@ -180,9 +180,9 @@ export class Interprater {
     }
     
     if (expr.type == 'op') {
-      const left = this.#interprateExpr(expr.left)
-      const right = this.#interprateExpr(expr.right)
-      const result = left.get_method(expr.name, expr.params)(left, right)
+      const left = this.#interprateExpr(expr.left, scope)
+      const right = this.#interprateExpr(expr.right, scope)
+      const result = left.get_meth(expr.name, expr.params)(left, right)
       
       if (expr.isEquals) {
         if('<>'.includes(expr.operator.value)) {
@@ -196,7 +196,7 @@ export class Interprater {
       return result
     }
     
-    if(expr.type == 'as') {
+    if (expr.type == 'as') {
       const name = expr.castType.name.value
       const value = this.#interprateExpr(expr.expr)
       
@@ -204,12 +204,12 @@ export class Interprater {
       if (name == 'int') return int(value.value)
     }
     
-    if(expr.type == 'neg') {
+    if (expr.type == 'neg') {
       const val = this.#interprateExpr(expr.val)
       return val.get_method('negative', '()')(val)
     }
     
-    if(expr.type == 'new') {
+    if (expr.type == 'new') {
       const name = expr.name.value
       const cls = this.#global.get_class(name)
       const ins = cls.instance()

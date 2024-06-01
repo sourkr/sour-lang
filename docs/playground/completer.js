@@ -14,7 +14,9 @@ export class Completer {
     editor.showCompletion(this.listBody(ast.body, index, len))
   }
   
-  static listBody(body, index, len, scope = this.global) {
+  static listBody(body, index, len, scope = this.global, kws) {
+    if  (!body) return []
+    
     for (let stmt of body) {
       if(!stmt) continue
       
@@ -23,6 +25,11 @@ export class Completer {
           return this.listTypes(stmt.valType.name.value.substring(0, index - stmt.valType?.name?.start?.index))
         
         this.global.def_var(stmt.name?.value, stmt.typ)
+      }
+      
+      if (stmt.type == 'ret') {
+        const list = this.listBody([stmt.val], index, len, scope, [])
+        if(list.length) return list
       }
       
       if (stmt.type == 'call') {
@@ -41,12 +48,14 @@ export class Completer {
       
       if (stmt.type == 'ident') {
         if (isInsideTok(index, stmt, len)) {
-          return this.listGlobals(stmt.value.substring(0, index - stmt.start.index), scope)
+          return this.listGlobals(stmt.value.substring(0, index - stmt.start.index), scope, kws)
         }
       }
       
       if (stmt.type == 'class') {
-        const cls = new ClassType(stmt.name.value, [])
+        const cls = new ClassType(stmt.name?.value, [])
+        
+        if(!stmt.body) continue
         
         for(let stmt2 of stmt.body) {
           if(!stmt2) continue
@@ -67,9 +76,12 @@ export class Completer {
           
           if(stmt2.type == 'fun') {
             const mScope = new MethodScope(this.global, cls)
-            const list = this.listType(stmt2.ret, index, len)
+            const list = []
             
-            list.push(...this.listBody(stmt2.body, index, len, mScope))
+            console.log(stmt2)
+            
+            list.push(this.listType(stmt2.ret, index, len))
+            list.push(...this.listBody(stmt2.body, index, len, mScope, ['return']))
             
             if (list.length) return list
           }
@@ -86,6 +98,11 @@ export class Completer {
         list.push(...this.listBody(stmt.body, index, len))
         
         if (list.length) return list
+      }
+      
+      if (stmt.type == 'op') {
+        const list = this.listBody([ stmt.right ], index, len, scope)
+        if(list.length) return list
       }
     }
     
@@ -104,10 +121,10 @@ export class Completer {
     return []
   }
   
-  static listGlobals(prefix, scope) {
+  static listGlobals(prefix, scope, kws) {
     // console.log(prefix)
     return [
-      ...this.listKw(prefix),
+      ...this.listKw(prefix, kws),
       ...this.listVars(prefix),
       ...this.listFields(prefix, scope),
       ...this.listFuns(prefix),

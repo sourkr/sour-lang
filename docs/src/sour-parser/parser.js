@@ -16,14 +16,16 @@ export class Parser {
   
   #parseStmt() {
     switch(true) {
-      case this.#isKeyword('var'): return this.#parseVar()
-      case this.#isKeyword('const'): return this.#parseConst()
-      case this.#isKeyword('fun'): return this.#parseFun()
-      case this.#isKeyword('class'): return this.#parseClass()
+      case this.#isKeyword('var'):    return this.#parseVar()
+      case this.#isKeyword('const'):  return this.#parseConst()
+      case this.#isKeyword('fun'):    return this.#parseFun()
+      case this.#isKeyword('class'):  return this.#parseClass()
       
-      case this.#isKeyword('if'): return this.#parseIf()
-      case this.#isKeyword('while'): return this.#parseWhile()
-      case this.#isKeyword('for'): return this.#parseFor()
+      case this.#isKeyword('if'):     return this.#parseIf()
+      case this.#isKeyword('while'):  return this.#parseWhile()
+      case this.#isKeyword('for'):    return this.#parseFor()
+      
+      case this.#isKeyword('return'): return this.#parseRet()
       
       default: return this.#parseExpr()
     }
@@ -194,6 +196,13 @@ export class Parser {
     const body = this.#parseBody()
     
     return { type: 'for', initialisation, condition, incrementation, body }
+  }
+  
+  #parseRet() {
+    const kw = this.#nextToken()
+    const value = this.#parseExpr()
+    
+    return { type: 'ret', kw, value }
   }
   
   #parseParams() {

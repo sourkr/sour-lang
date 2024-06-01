@@ -40,13 +40,14 @@ export class Validator {
     if(stmt.err) this.#err(stmt.err)
     
     switch (stmt.type) {
-      case 'var': return this.#checkVar(stmt, scope)
+      case 'var'  : return this.#checkVar(stmt, scope)
       case 'const': return this.#checkConst(stmt)
-      case 'fun': return this.#checkFun(stmt)
+      case 'fun'  : return this.#checkFun(stmt)
       case 'class': return this.#checkClass(stmt, scope)
-      case 'if': return this.#checkIf(stmt)
+      case 'if'   : return this.#checkIf(stmt)
       case 'while': return this.#checkWhile(stmt)
-      case 'for': return this.#checkFor(stmt)
+      case 'for'  : return this.#checkFor(stmt)
+      case 'ret'  : return this.#checkRet(stmt, scope)
       
       default: return this.#checkExpr(stmt, scope)
     }
@@ -66,7 +67,7 @@ export class Validator {
       case 'assign': return this.#checkAssign(expr)
       case 'array': return this.#checkArray(expr)
       case 'dot': return this.#checkDot(expr, scope)
-      case 'op': return this.#checkOp(expr)
+      case 'op': return this.#checkOp(expr, scope)
       case 'as': return this.#checkAs(expr)
       case 'neg': return this.#checkNeg(expr)
       case 'new': return this.#checkNew(expr)
@@ -140,6 +141,8 @@ export class Validator {
     
     const body = this.#checkBody(fun.body)
     
+    
+    
     this.#global.define_function(name, params, ANY)
     
     return { ...fun, body, params: params.toString() }
@@ -185,9 +188,21 @@ export class Validator {
         
         const body = this.#checkBody(stmt.body, mScope)
         
+        let returns = false
+        
+        body?.forEach?.(stmt => {
+          if (stmt.type == 'ret') {
+            if (!stmt.val.typ.isAssignableTo(typ))
+              this.#error(`'${stmt.val.typ}'' is not assignable to '${typ}'`, stmt.kw)
+            returns = true
+          }
+        })
+        
+        if (!returns) this.#error(`missing return statment`, stmt.name)
+        
         cls.def_meth(name, params, typ)
         
-        return { ...stmt, body, typ, params: params.toString(true) }
+        return { ...stmt, body, typ, param: params.toString(true) }
       }
       
       return this.#unexpected_symbol(stmt)
@@ -224,6 +239,12 @@ export class Validator {
     const body = this.#checkBody(s.body)
     
     return { ...s, initialisation, condition, incrementation, body }
+  }
+  
+  #checkRet(ret, scope) {
+    const val = this.#checkExpr(ret.value, scope)
+    
+    return { ...ret, val }
   }
   
   #checkBody(body, scope) {
@@ -324,7 +345,7 @@ export class Validator {
       return { ...ident, typ: new InstanceType(this.#global.get_class('bool')) }
     }
     
-    if (scope.has_var(name)) {
+    if (scope?.has_var?.(name)) {
       const typ = scope.get_var(name)
       typ.usage++
       return { ...ident, typ, org: 'var' }
@@ -411,20 +432,20 @@ export class Validator {
     return { ...dot, left, typ }
   }
   
-  #checkOp(op) {
-    const left = this.#checkExpr(op.left)
-    const right = this.#checkExpr(op.right)
+  #checkOp(op, scope) {
+    const left = this.#checkExpr(op.left, scope)
+    const right = this.#checkExpr(op.right, scope)
     const operator = op.operator.value
     
     // if(!op_names.has(operator)) return this.#error(`'${operator}' is not an operator.`, op.operator, { ...op, typ: ANY })
     
     const name = op_names.get(operator)
     
-    if(!left.typ.has_method(name, [right.typ]))
+    if(!left.typ.has_meth(name, [right.typ]))
       return this.#error(`cannot find operator (${left.typ} ${operator}${op.isEquals?'=':''} ${right.typ})`, operator, { ...op, left, right })
       
-    const params = left.typ.get_method_params(name, [right.typ])
-    const typ = left.typ.get_method(name, [right.typ])
+    const params = left.typ.get_meth_params(name, [right.typ])
+    const typ = left.typ.get_meth(name, [right.typ])
     
     let eqParams
     

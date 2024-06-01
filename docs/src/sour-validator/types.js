@@ -87,7 +87,7 @@ export class InstanceType extends Type {
     cls.meths.forEach((old_map, name) => {
       const generic = type => type.kind == 'generic' ? type.assigned(gPair.get(type.name)) : type
       
-      const map = new Map(old_map.entries()
+      const map = new Map([...old_map.entries()]
         .map(entry => [
           new ParamList(entry[0].params.map(param => new ParamType(param.name, generic(param.type)))),
           generic(entry[1])
