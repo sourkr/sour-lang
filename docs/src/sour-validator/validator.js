@@ -1,5 +1,5 @@
 import { Parser } from '../sour-parser/parser.js';
-import { GlobalScope, ClassType, InstanceType, ParamList, ANY, VOID } from './types.js';
+import { GlobalScope, MethodScope, ClassType, InstanceType, ParamList, ANY, VOID } from './types.js';
 import { BUILTINS } from './builtin.js';
 
 const reserved = [ 'true', 'false', 'null', 'void' ]
@@ -35,37 +35,37 @@ export class Validator {
     return this.#checkStmt(this.#parser.next())
   }
   
-  #checkStmt(stmt) {
+  #checkStmt(stmt, scope = this.#global) {
     if(!stmt) return null
     if(stmt.err) this.#err(stmt.err)
     
     switch (stmt.type) {
-      case 'var': return this.#checkVar(stmt)
+      case 'var': return this.#checkVar(stmt, scope)
       case 'const': return this.#checkConst(stmt)
       case 'fun': return this.#checkFun(stmt)
-      case 'class': return this.#checkClass(stmt)
+      case 'class': return this.#checkClass(stmt, scope)
       case 'if': return this.#checkIf(stmt)
       case 'while': return this.#checkWhile(stmt)
       case 'for': return this.#checkFor(stmt)
       
-      default: return this.#checkExpr(stmt)
+      default: return this.#checkExpr(stmt, scope)
     }
     
     return stmt
   }
   
-  #checkExpr(expr) {
+  #checkExpr(expr, scope) {
     if(expr?.err) this.#err(expr.err)
     
     switch (expr?.type) {
-      case 'call': return this.#checkCall(expr)
+      case 'call': return this.#checkCall(expr, scope)
       case 'str': return this.#checkStr(expr)
       case 'num': return this.#checkNum(expr)
-      case 'ident': return this.#checkIdent(expr)
+      case 'ident': return this.#checkIdent(expr, scope)
       case 'char': return this.#checkChar(expr)
       case 'assign': return this.#checkAssign(expr)
       case 'array': return this.#checkArray(expr)
-      case 'dot': return this.#checkDot(expr)
+      case 'dot': return this.#checkDot(expr, scope)
       case 'op': return this.#checkOp(expr)
       case 'as': return this.#checkAs(expr)
       case 'neg': return this.#checkNeg(expr)
@@ -77,7 +77,7 @@ export class Validator {
   
   
   // stmt
-  #checkVar(v) {
+  #checkVar(v, scope) {
     let val
     let typ
     
@@ -90,7 +90,7 @@ export class Validator {
     }
     
     if(v.value) {
-      val = this.#checkExpr(v.value)
+      val = this.#checkExpr(v.value, scope)
       // console.log(val.typ.toString())
       
       if(typ) {
@@ -145,16 +145,18 @@ export class Validator {
     return { ...fun, body, params: params.toString() }
   }
   
-  #checkClass(stmt) {
+  #checkClass(stmt, scope) {
     const name = stmt.name?.value
     
     if(this.#global.has(name)) this.#error(`cannot redeclare symbol '${name}'`, stmt.name)
     
     const cls = new ClassType(name, [])
+    const mScope = new MethodScope(this.#global, cls)
     this.#global.def_class(name, cls)
     
     const body = stmt.body?.map(stmt => {
       if(!stmt) return
+      if(stmt.err) this.#err(stmt.err)
       
       if(stmt.type == 'err') {
         this.#err(stmt)
@@ -163,9 +165,9 @@ export class Validator {
       
       if(stmt.type == 'var') {
         const name = stmt.name?.value
-        const val = this.#checkExpr(stmt.value)
+        const val = this.#checkExpr(stmt.value, scope)
         
-        cls.def_var(name, val.typ)
+        cls.def_field(name, val.typ)
         
         return { ...stmt, val }
       }
@@ -181,7 +183,7 @@ export class Validator {
         
         const typ = this.#checkType(stmt.ret, true)
         
-        const body = this.#checkBody(stmt.body)
+        const body = this.#checkBody(stmt.body, mScope)
         
         cls.def_meth(name, params, typ)
         
@@ -224,18 +226,23 @@ export class Validator {
     return { ...s, initialisation, condition, incrementation, body }
   }
   
-  #checkBody(body) {
-    return body.map(this.#checkStmt.bind(this))
+  #checkBody(body, scope) {
+    return body?.map?.(stmt => this.#checkStmt(stmt, scope))
   }
   
   
   // expr
-  #checkCall(call) {
+  #checkCall(call, scope) {
     if(call.err) this.#err(call.err)
     
     if (call.access.type == 'dot') {
-      const left = this.#checkExpr(call.access.left)
+      const left = this.#checkExpr(call.access.left, scope)
       const name = call.access.right.value
+      
+      if(is_any(left.typ)) {
+        call.args.forEach(arg => this.#checkExpr(arg, scope))
+        return { ...call, access: { ...call.access, left} }
+      }
       
       if (!left.typ.has_meth(name))
         return this.#error(`cannot not find method ${name} in ${left.typ}`, call.access, call)
@@ -261,13 +268,12 @@ export class Validator {
       return { ...call, access, params, args, typ }
     }
     
-    
     const name = call.access.value
     
     if(!this.#global.has_fun(name))
       return this.#error(`cannot not find function ${name}`, call.access, call)
     
-    const args = call.args.map(arg => this.#checkExpr(arg))
+    const args = call.args.map(arg => this.#checkExpr(arg, scope))
     const typeArgs = args.map(arg => arg.typ)
     
     if(!this.#global.has_fun(name, typeArgs)) {
@@ -311,24 +317,28 @@ export class Validator {
     }
   }
   
-  #checkIdent(ident) {
+  #checkIdent(ident, scope) {
     const name = ident.value
     
     if(name == 'true' || name == 'false') {
       return { ...ident, typ: new InstanceType(this.#global.get_class('bool')) }
     }
     
-    if (this.#global.has_var(name)) {
-      const typ = this.#global.get_var(name)
+    if (scope.has_var(name)) {
+      const typ = scope.get_var(name)
       typ.usage++
-      return { ...ident, typ }
+      return { ...ident, typ, org: 'var' }
     }
     
-    if (this.#global.has_const(name)) {
-      return { ...ident, typ: this.#global.get_constant(name) }
+    if (scope?.has_const?.(name)) {
+      return { ...ident, typ: scope.get_constant(name), org: 'const' }
     }
     
-    this.#error(`cannot find variable '${name}'`, ident)
+    if (scope?.has_field?.(name)) {
+      return { ...ident, typ: scope.get_field(name), org: 'field' }
+    }
+    
+    this.#error(`cannot find symbol '${name}'`, ident)
     
     return { ...ident, typ: ANY }
   }
@@ -385,8 +395,8 @@ export class Validator {
     return { ...arr, values, typ }
   }
   
-  #checkDot(dot) {
-    const left = this.#checkExpr(dot.left)
+  #checkDot(dot, scope) {
+    const left = this.#checkExpr(dot.left, scope)
     const name = dot.right?.value
     
     
@@ -538,4 +548,8 @@ export class Validator {
 
 function error(msg, token) {
   return { type: 'err', msg, start: token?.start, end: token?.end }
+}
+
+function is_any(type) {
+  return type.kind == 'special' && type.type == 'any'
 }

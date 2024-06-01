@@ -24,7 +24,7 @@ export class Type {
 
 export class ClassType extends Type {
   consts = new Map()
-  vars = new Map()
+  fields = new Map()
   meths = new Map()
   
   constructor(name, generic, extend) {
@@ -51,8 +51,8 @@ export class ClassType extends Type {
     return this.name == 'unknown'
   }
   
-  def_var(name, type) {
-    this.vars.set(name, type)
+  def_field(name, type) {
+    this.fields.set(name, type)
   }
   
   def_meth(name, params, ret) {
@@ -566,5 +566,35 @@ export class GlobalScope {
   has(name) {
     return this.has_class(name)
       || this.#builins.has(name)
+  }
+}
+
+export class MethodScope {
+  constructor(global, cls) {
+    this.global = global
+    this.class = cls
+  }
+  
+  // vars
+  has_var(name) {
+    return this.global.has_var(name)
+  }
+  
+  get_var(name) {
+    return this.global.get_var(name)
+  }
+  
+  
+  // fields
+  has_field(name) {
+    return this.class.fields.has(name)
+  }
+  
+  get_field(name) {
+    return this.class.fields.get(name)
+  }
+  
+  get_fields() {
+    return this.class.fields
   }
 }

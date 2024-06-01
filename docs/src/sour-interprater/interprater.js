@@ -1,6 +1,6 @@
 import { Validator } from '../sour-validator/validator.js';
 import { BUILTIN, byte, int, str } from './builtin.js';
-import { GlobalScope, Class } from './scope.js';
+import { GlobalScope, MethodScope, Class } from './scope.js';
 import { Stream } from './stream.js';
 
 const nums = [ 'byte', 'short', 'int', 'long' ]
@@ -53,7 +53,7 @@ export class Interprater {
     this.#interprateBody(ast.body)
   }
   
-  #interprateStmt(stmt) {
+  #interprateStmt(stmt, scope) {
     if (stmt.type == 'err') this.#error(stmt)
     
     if (stmt.type == 'var') {
@@ -80,8 +80,9 @@ export class Interprater {
         }
         
         if (stmt.type == 'fun') {
-          cls.def_meth(name, stmt.params, () => {
-            this.#interprateBody(stmt.body)
+          cls.def_meth(name, stmt.params, (self, ...args) => {
+            const mScope = new MethodScope(this.#global, self)
+            this.#interprateBody(stmt.body, mScope)
           })
         }
       })
@@ -117,17 +118,19 @@ export class Interprater {
       })
     }
     
-    this.#interprateExpr(stmt)
+    this.#interprateExpr(stmt, scope)
   }
   
-  #interprateBody(body) {
+  #interprateBody(body, scope = this.#global) {
+    // console.log(scope)
     for(let stmt of body) {
       if(stmt.type == 'return') return this.#interprateExpr(stmt.value, self)
-      this.#interprateStmt(stmt)
+      this.#interprateStmt(stmt, scope)
     }
   }
   
-  #interprateExpr(expr) {
+  #interprateExpr(expr, scope) {
+    // console.log(scope)
     if(expr == null) return
     
     if(expr.type == 'int') return int(expr.val)
@@ -142,15 +145,15 @@ export class Interprater {
         case 'true': return true
         case 'false': return false
       }
-      
-      return this.#global.get_var(name)
+      console.log(scope)
+      return scope.get_var(name)
     }
     
     if(expr.type == 'call') {
-      const args = expr.args.map(this.#interprateExpr.bind(this))
+      const args = expr.args.map(arg => this.#interprateExpr(arg, scope))
       
       if(expr.access.type == 'dot') {
-        const left = this.#interprateExpr(expr.access.left)
+        const left = this.#interprateExpr(expr.access.left, scope)
         // console.log(left.get_meth(expr.access.right.value, expr.params))
         return left.get_meth(expr.access.right.value, expr.params)(left, ...args)
       }
@@ -172,7 +175,7 @@ export class Interprater {
     }
     
     if (expr.type == 'dot') {
-      const left = this.#interprateExpr(expr.left)
+      const left = this.#interprateExpr(expr.left, scope)
       return left.get_var(expr.right.value)
     }
     

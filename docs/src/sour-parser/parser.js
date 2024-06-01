@@ -108,7 +108,10 @@ export class Parser {
     const name = this.#nextToken()
     
     const params = this.#parseParams()
+    
+    if(!this.#isPunc(':')) return unexpected(this.#nextToken(), 'fun', { kw, name, params })
     this.#skip() // ':'
+    
     const ret = this.#parseType()
     const body = this.#parseBlock()
     
@@ -194,7 +197,7 @@ export class Parser {
   }
   
   #parseParams() {
-    if (!this.#isPunc('(')) return error(`expecting '(`, this.#nextToken())
+    if (!this.#isPunc('(')) return error(`expecting '('`, this.#nextToken())
     this.#skip() // '('
     
     const params = []
@@ -205,7 +208,9 @@ export class Parser {
     }
     
     while (true) {
+      if (!this.#isIdent()) return error(`expecting ')'`, this.#nextToken())
       const name = this.#nextToken()
+      
       this.#skip() // ':'
       const type = this.#parseType()
       

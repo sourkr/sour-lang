@@ -113,3 +113,14 @@ export class GlobalScope {
     return this.classes.get(name)
   }
 }
+
+export class MethodScope {
+  constructor(global, self) {
+    this.global = global
+    this.self = self
+  }
+  
+  get_var(name) {
+    return this.self.get_var(name)
+  }
+}
