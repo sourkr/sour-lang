@@ -14,4 +14,12 @@ export class Completion {
     if(!this.type) return ''
     return `${this.type}${this.info ? `<hr>${this.info}` : ''}`
   }
+  
+  get full() {
+    return this.prefix + this.sufix
+  }
+  
+  compare(a) {
+    return this.full.localeCompare(a.full)
+  }
 }

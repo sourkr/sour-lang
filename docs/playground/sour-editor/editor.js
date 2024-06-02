@@ -15,6 +15,7 @@ const css = (`
     height: 100%;
     position: relative;
     flex: 1;
+    overflow: scroll;
   }
   
   textarea {
@@ -49,7 +50,6 @@ const css = (`
   .pre {
     position: absolute;
     top: 0;
-    width: 100%;
     height: 100%;
     pointer-events: none;
     
@@ -110,6 +110,7 @@ export class SourEditor extends HTMLElement {
   #completion
   #list
   #info
+  #container
   
   constructor() {
     super()
@@ -117,7 +118,7 @@ export class SourEditor extends HTMLElement {
     this.#root = this.attachShadow({ mode: 'open' })
 
     const style = document.createElement('style')
-    const container = document.createElement('div')
+    this.#container = document.createElement('div')
     this.#completion = document.createElement('div')
     
     this.#textarea  = document.createElement('textarea')
@@ -128,7 +129,7 @@ export class SourEditor extends HTMLElement {
     this.#info = document.createElement('div')
     
     style.textContent = css
-    container.classList.add('container')
+    this.#container.classList.add('container')
     this.#completion.classList.add('completion')
     
     this.#pre.classList.add('pre')
@@ -137,8 +138,8 @@ export class SourEditor extends HTMLElement {
     this.#list.classList.add('list')
     this.#info.classList.add('info')
     
-    this.#root.append(style, this.#lineno, container, this.#completion)
-    container.append(this .#textarea, this.#pre)
+    this.#root.append(style, this.#lineno, this.#container, this.#completion)
+    this.#container.append(this .#textarea, this.#pre)
     this.#completion.append(this.#list, this.#info)
     
     this.#update()
@@ -257,6 +258,10 @@ export class SourEditor extends HTMLElement {
   #update() {
     var text = this.value.split('\n').map((_, i) => i + 1).join('\n')
     this.#lineno.innerText = text
+    
+    const preWidth = parseFloat(getComputedStyle(this.#pre).width) + 10
+    const containerWidth = parseFloat(getComputedStyle(this.#container).width)
+    this.#textarea.style.width = (preWidth > containerWidth ? preWidth : containerWidth) + 'px'
   }
 }
 

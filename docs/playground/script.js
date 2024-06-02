@@ -48,6 +48,7 @@ editor.onkeydown = ev => {
     editor.value = left + '\t' + right
     editor.current_index = index + 1
     ev.preventDefault()
+    editor.dispatchEvent(new InputEvent('input'))
   }
   
   if(ev.key == 'i' && ev.ctrlKey) {

@@ -23,7 +23,6 @@ export class Type {
 }
 
 export class ClassType extends Type {
-  consts = new Map()
   fields = new Map()
   meths = new Map()
   
@@ -52,6 +51,7 @@ export class ClassType extends Type {
   }
   
   def_field(name, type) {
+    // console.log(type)
     this.fields.set(name, type)
   }
   
@@ -66,6 +66,10 @@ export class ClassType extends Type {
     if(this.generic.length) return `class ${this.name}<${generic}>`
     return `class ${this.name}`
   }
+  
+  toHTML() {
+    return 
+  }
 }
 
 export class InstanceType extends Type {
@@ -78,10 +82,7 @@ export class InstanceType extends Type {
     const gPair = new Map()
     cls.generic.forEach((name, index) => gPair.set(name, generic[index]))
     
-    // console.log(cls.name, cls.vars)
-    
-    this.consts = new Map(cls.consts)
-    this.vars = new Map(cls.vars)
+    this.fields = new Map([...cls.fields])
     this.meths = new Map()
     
     cls.meths.forEach((old_map, name) => {
@@ -112,21 +113,20 @@ export class InstanceType extends Type {
     return type.kind == 'instance' && type.cls == this.cls
   }
   
-  // vars
-  get_vars() {
-    return this.vars
-  }
-  
+  // fields
   has_field(name) {
-    return this.consts.has(name)
-      || this.vars.has(name)
+    return this.fields.has(name)
   }
   
   get_field(name) {
-    return this.consts.get(name)
-      || this.vars.get(name)
+    return this.fields.get(name)
   }
   
+  get_fields() {
+    return this.fields
+  }
+  
+  // meth
   has_meth(name, args) {
     if (!args) return this.meths.has(name)
     if (!this.has_meth(name)) return false
@@ -136,15 +136,9 @@ export class InstanceType extends Type {
   }
   
   get_meth_params(name, args) {
-    
     return [...this.meths.get(name).keys()]
       .find(params => params.isAssignableTo(args))
       .toString(true)
-      
-      // .map((matched, index) => { return { matched, index } })
-      // .find(result => result.matched)
-      // .index ?? -1
-  
   }
   
   get_meth(name, args) {
@@ -153,7 +147,7 @@ export class InstanceType extends Type {
   }
   
   get_meths(name) {
-    // console.log(this.cla)
+    if(name) return this.meths.get(name)
     return this.meths
   }
   
@@ -328,7 +322,7 @@ export class ParamList extends Type {
       if(!param) return false
       if(param.isSpreaded) params.unshift(param)
       
-      if(!arg.isAssignableTo(param.type)) return false
+      if(!arg.isAssignableTo?.(param.type)) return false
     }
     
     while (params.length) {
@@ -393,6 +387,20 @@ export class VarType extends Type {
     return `<span style="color:${red}">var</span> ${this.name}: ${this.type?.toHTML()}`
   }
 }
+
+export class ConstType extends Type {
+  constructor(name, type) {
+    super('const')
+    
+    this.name = name
+    this.type = type
+  }
+  
+  toHTML() {
+    return `<span style="color:${red}">const</span> ${this.name}: ${this.type?.toHTML?.()}`
+  }
+}
+
 
 export const VOID = new SpecialType('void')
 export const ANY = new SpecialType('any')
@@ -495,6 +503,7 @@ export class BuiltinScope {
 export class GlobalScope {
   #builins
   
+  consts = new Map()
   vars = new Map()
   classes = new Map()
   
@@ -502,8 +511,17 @@ export class GlobalScope {
     this.#builins = builins
   }
   
-  has_const() {
-    return false
+  // consts
+  def_const(name, type) {
+    this.consts.set(name, type)
+  }
+  
+  has_const(name) {
+    return this.consts.has(name)
+  }
+  
+  get_const(name) {
+    return this.consts.get(name)
   }
   
   // vars
@@ -558,7 +576,10 @@ export class GlobalScope {
   }
   
   get_classes() {
-    return this.#builins.classes
+    return new Map([
+      ...this.#builins.classes,
+      ...this.classes
+    ])
   }
   
   
@@ -570,31 +591,107 @@ export class GlobalScope {
 }
 
 export class MethodScope {
-  constructor(global, cls) {
+  consts = new Map()
+  vars = new Map()
+  
+  constructor(global, self) {
     this.global = global
-    this.class = cls
+    this.self = self
+    
+    this.consts.set('this', self)
   }
   
+  // consts
+  def_const(name, value) {
+    this.consts.set(name, value)
+  }
+  
+  has_const(name) {
+    return this.consts.has(name)
+  }
+  
+  get_const(name) {
+    return this.consts.get(name)
+  }
+  
+  get_consts() {
+    return this.consts
+  }
+  
+  
   // vars
+  def_var(name, value) {
+    this.vars.set(name, value)
+  }
+  
   has_var(name) {
-    return this.global.has_var(name)
+    return this.vars.has(name)
+      || this.global.has_var(name)
   }
   
   get_var(name) {
-    return this.global.get_var(name)
+    return this.vars.get(name)
+      || this.global.get_var(name)
+  }
+  
+  get_vars(name) {
+    return new Map([
+      ...this.vars,
+      ...this.global.get_vars()
+    ])
   }
   
   
   // fields
   has_field(name) {
-    return this.class.fields.has(name)
+    return this.self.has_field(name)
   }
   
   get_field(name) {
-    return this.class.fields.get(name)
+    return this.self.get_field(name)
   }
   
   get_fields() {
-    return this.class.fields
+    return this.self.get_fields()
+  }
+  
+  
+  // meths
+  has_meth(name, args) {
+    return this.self.has_meth(name, args)
+  }
+  
+  get_meth_params(name, args) {
+    return this.self.get_meth_params(name, args)
+  }
+  
+  get_meth(name, args) {
+    return this.self.get_meth(name, args)
+  }
+  
+  get_meths(name) {
+    return this.self.get_meths(name)
+  }
+  
+  
+  // funs
+  has_fun(name) {
+    return this.global.has_fun(name)
+  }
+  
+  get_fun_params(name, args) {
+    return this.global.get_fun_params(name, args)
+  }
+  
+  get_fun(name, args) {
+    return this.global.get_fun(name, args)
+  }
+  
+  // all
+  has(name) {
+    return this.has_const(name)
+      || this.has_var(name)
+      || this.has_field(name)
+      || this.has_meth(name)
   }
 }

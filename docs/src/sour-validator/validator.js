@@ -1,5 +1,5 @@
 import { Parser } from '../sour-parser/parser.js';
-import { GlobalScope, MethodScope, ClassType, InstanceType, ParamList, ANY, VOID } from './types.js';
+import { GlobalScope, MethodScope, ClassType, InstanceType, ParamList, ParamType, ANY, VOID } from './types.js';
 import { BUILTINS } from './builtin.js';
 
 const reserved = [ 'true', 'false', 'null', 'void' ]
@@ -14,10 +14,7 @@ const nums = ['byte', 'int']
 export class Validator {
   #global = new GlobalScope(BUILTINS)
   
-  #ast = {
-    errors: [],
-    body: []
-  }
+  #errors = []
   
   #parser
   
@@ -26,13 +23,10 @@ export class Validator {
   }
   
   validate() {
-    this.#parser.forEach(stmt => this.#ast.body.push(this.#checkStmt(stmt)))
-    
-    return this.#ast
-  }
-  
-  next() {
-    return this.#checkStmt(this.#parser.next())
+    const body = this.#parser.parse()
+      .map(stmt => this.#checkStmt(stmt))
+      
+    return { body, errors: this.#errors }
   }
   
   #checkStmt(stmt, scope = this.#global) {
@@ -41,13 +35,14 @@ export class Validator {
     
     switch (stmt.type) {
       case 'var'  : return this.#checkVar(stmt, scope)
-      case 'const': return this.#checkConst(stmt)
+      case 'const': return this.#checkConst(stmt, scope)
       case 'fun'  : return this.#checkFun(stmt)
       case 'class': return this.#checkClass(stmt, scope)
       case 'if'   : return this.#checkIf(stmt)
       case 'while': return this.#checkWhile(stmt)
       case 'for'  : return this.#checkFor(stmt)
       case 'ret'  : return this.#checkRet(stmt, scope)
+      case 'cmt'  : return stmt
       
       default: return this.#checkExpr(stmt, scope)
     }
@@ -59,18 +54,18 @@ export class Validator {
     if(expr?.err) this.#err(expr.err)
     
     switch (expr?.type) {
-      case 'call': return this.#checkCall(expr, scope)
-      case 'str': return this.#checkStr(expr)
-      case 'num': return this.#checkNum(expr)
-      case 'ident': return this.#checkIdent(expr, scope)
-      case 'char': return this.#checkChar(expr)
-      case 'assign': return this.#checkAssign(expr)
-      case 'array': return this.#checkArray(expr)
-      case 'dot': return this.#checkDot(expr, scope)
-      case 'op': return this.#checkOp(expr, scope)
-      case 'as': return this.#checkAs(expr)
-      case 'neg': return this.#checkNeg(expr)
-      case 'new': return this.#checkNew(expr)
+      case 'call'  : return this.#checkCall(expr, scope)
+      case 'str'   : return this.#checkStr(expr)
+      case 'num'   : return this.#checkNum(expr)
+      case 'ident' : return this.#checkIdent(expr, scope)
+      case 'char'  : return this.#checkChar(expr)
+      case 'assign': return this.#checkAssign(expr, scope)
+      case 'array' : return this.#checkArray(expr)
+      case 'dot'   : return this.#checkDot(expr, scope)
+      case 'op'    : return this.#checkOp(expr, scope)
+      case 'as'    : return this.#checkAs(expr)
+      case 'neg'   : return this.#checkNeg(expr)
+      case 'new'   : return this.#checkNew(expr, scope)
       
       default: return this.#error(`unexpected symbol`, expr, {...expr, typ: ANY})
     }
@@ -107,27 +102,27 @@ export class Validator {
     return { ...v, typ, val }
   }
   
-  #checkConst(v) {
+  #checkConst(v, scope) {
     if(v.err) this.#err(v.err)
     
     let typ
     
     const name = v.name?.value
-    if(this.#global.has(name)) this.#error(`cannot redeclare symbol ${name}`, v.name)
+    if(scope.has(name)) this.#error(`cannot redeclare symbol ${name}`, v.name)
     
     if(v.valType) {
       typ = this.#checkType(v.valType)
       if (typ.type == 'err') this.#err(type)
     }
     
-    const val = this.#checkExpr(v.value)
+    const val = this.#checkExpr(v.value, scope)
     
     if(typ) {
       if(!val.typ.isAssignableTo(typ))
         this.#error(`value of type ${val.typ} is not assignable to variable of type ${typ}`, v.value)
     } else typ = val.typ
     
-    this.#global.define_constant(name, typ)
+    scope.def_const(name, typ)
     
     return { ...v, typ, val }
   }
@@ -150,11 +145,11 @@ export class Validator {
   
   #checkClass(stmt, scope) {
     const name = stmt.name?.value
+    const cls_stmt = stmt
     
     if(this.#global.has(name)) this.#error(`cannot redeclare symbol '${name}'`, stmt.name)
     
     const cls = new ClassType(name, [])
-    const mScope = new MethodScope(this.#global, cls)
     this.#global.def_class(name, cls)
     
     const body = stmt.body?.map(stmt => {
@@ -168,25 +163,82 @@ export class Validator {
       
       if(stmt.type == 'var') {
         const name = stmt.name?.value
-        const val = this.#checkExpr(stmt.value, scope)
         
-        cls.def_field(name, val.typ)
+        let typ
+        let val
         
-        return { ...stmt, val }
+        if (stmt.valType) {
+          type = this.#checkType(stmt.valType)
+        }
+        
+        if (stmt.value) {
+          val = this.#checkExpr(stmt.value, scope)
+          typ = typ || val.typ
+        }
+        
+        
+        cls.def_field(name, typ)
+        
+        return { ...stmt, val, typ }
+      }
+      
+      if(stmt.type == 'const') {
+        const name = stmt.name?.value
+        
+        let typ
+        let val
+        
+        if (stmt.valType) {
+          typ = this.#checkType(stmt.valType)
+        }
+        
+        if (stmt.value) {
+          val = this.#checkExpr(stmt.value, scope)
+          typ = typ ?? val.typ
+        }
+        
+        if (typ) {
+          typ.isInit = !!val
+          typ.isConst = true
+        }  
+        
+        cls.def_field(name, typ)
+        
+        return { ...stmt, val, typ }
       }
       
       if(stmt.type == 'fun') {
         const name = stmt.name?.value
+        const paramNames = []
+        const mScope = new MethodScope(this.#global, new InstanceType(cls))
         
-        const params = new ParamList([])
-        
-        if(name == 'constructor') {
+        const params = stmt.params?.map?.(param => {
+          if (param.err) this.#err(param.err)
+          if (param.type == 'err') this.#err(param)
           
-        }
+          const typ = this.#checkType(param.paramType)
+          mScope.def_const(param.name.value, typ)
+          
+          return { ...param, typ }
+        })
         
+        const paramList = new ParamList(params.map(p => new ParamType(p.name?.value, p.typ)))
         const typ = this.#checkType(stmt.ret, true)
         
-        const body = this.#checkBody(stmt.body, mScope)
+        let body
+        
+        if (name == 'constructor') {
+          if (!is_void(typ)) this.#error(`return type of constructor must be 'void'`, stmt.ret)
+          
+          body = stmt.body?.map(stmt => {
+            if(stmt.type == 'assign')
+              return this.#checkAssign(stmt, mScope, true)
+            
+            return this.#checkStmt(stmt, mScope)
+          })
+          
+          
+        } else body = this.#checkBody(stmt.body, mScope)
         
         let returns = false
         
@@ -198,14 +250,22 @@ export class Validator {
           }
         })
         
-        if (!returns) this.#error(`missing return statment`, stmt.name)
+        if (!returns && !is_void(typ)) this.#error(`missing return statment`, stmt.name)
         
-        cls.def_meth(name, params, typ)
+        cls.def_meth(name, paramList, typ)
         
-        return { ...stmt, body, typ, param: params.toString(true) }
+        return { ...stmt, body, typ, param: paramList.toString(true), paramList }
       }
       
       return this.#unexpected_symbol(stmt)
+    })
+    
+    cls.fields.forEach((type, name) => {
+      if(type.isConst && !type.isInit) {
+        // console.log(stmt.body)
+        const cst = cls_stmt.body.find(stmt => stmt.name.value == name).name
+        this.#error(`constant field '${name}' is not initialised in constructor`, cst)
+      }
     })
     
     return { ...stmt, body }
@@ -224,9 +284,9 @@ export class Validator {
   #checkWhile(s) {
     const condition = this.#checkExpr(s.condition)
     if (condition.typ.class.name != 'bool') this.#error(`condition must be boolean`, s.condition)
-  
+    
     const body = this.#checkBody(s.body)
-  
+    
     return { ...s, condition, body }
   }
   
@@ -268,7 +328,7 @@ export class Validator {
       if (!left.typ.has_meth(name))
         return this.#error(`cannot not find method ${name} in ${left.typ}`, call.access, call)
       
-      const args = call.args.map(arg => this.#checkExpr(arg))
+      const args = call.args.map(arg => this.#checkExpr(arg, scope))
       const typeArgs = args.map(arg => arg.typ)
       
       if (!left.typ.has_meth(name, typeArgs)) {
@@ -280,25 +340,39 @@ export class Validator {
         return this.#error(errors.join('\n\n') + '\n\n', call.access, call)
       }
       
-      // console.log(Object.fromEntries(left.typ.methods.get('at')))
-      
-      const params = left.typ.get_meth_params(name, typeArgs)
+      const param = left.typ.get_meth_params(name, typeArgs)
       const typ = left.typ.get_meth(name, typeArgs)
       const access = { ...call.access, left }
       
-      return { ...call, access, params, args, typ }
+      return { ...call, access, param, args, typ }
     }
     
     const name = call.access.value
-    
-    if(!this.#global.has_fun(name))
-      return this.#error(`cannot not find function ${name}`, call.access, call)
-    
     const args = call.args.map(arg => this.#checkExpr(arg, scope))
     const typeArgs = args.map(arg => arg.typ)
     
-    if(!this.#global.has_fun(name, typeArgs)) {
-      const funs = this.#global.get_functions(name)
+    if (scope.has_meth?.(name)) {
+      if (!scope.has_meth(name, typeArgs)) {
+        const meths = scope.get_meths(name)
+        const errors = []
+        
+        errors.push(`cannot find suitable method for ${name}(${typeArgs.join(',')})`)
+        for(let params of meths.keys()) errors.push(`   ${name}${params} is not applicable`)
+        return this.#error(errors.join('\n\n') + '\n\n', call.access.right, call)
+      }
+      
+      const param = scope.get_meth_params(name, typeArgs)
+      const typ = scope.get_meth(name, typeArgs)
+      
+      return { ...call, param, args, typ }
+    }
+    
+    if(!scope.has_fun(name))
+      return this.#error(`cannot not find function ${name}`, call.access, call)
+    
+    // console.log(args)
+    if(!scope.has_fun(name, typeArgs)) {
+      const funs = scroll.get_funs(name)
       const errors = []
       
       errors.push(`cannot find suitable function for ${name}(${typeArgs.join(',')})`)
@@ -306,10 +380,10 @@ export class Validator {
       return this.#error(errors.join('\n\n') + '\n\n', call.access, call)
     }
     
-    const params = this.#global.get_fun_params(name, typeArgs)
-    const typ = this.#global.get_fun(name, typeArgs)
+    const param = scope.get_fun_params(name, typeArgs)
+    const typ = scope.get_fun(name, typeArgs)
     
-    return { ...call, params, args, typ }
+    return { ...call, param, args, typ }
   }
   
   #checkStr(str) {
@@ -352,16 +426,14 @@ export class Validator {
     }
     
     if (scope?.has_const?.(name)) {
-      return { ...ident, typ: scope.get_constant(name), org: 'const' }
+      return { ...ident, typ: scope.get_const(name), org: 'const' }
     }
     
     if (scope?.has_field?.(name)) {
       return { ...ident, typ: scope.get_field(name), org: 'field' }
     }
     
-    this.#error(`cannot find symbol '${name}'`, ident)
-    
-    return { ...ident, typ: ANY }
+    return this.#error(`cannot find symbol '${name}'`, ident, { ...ident, typ: ANY })
   }
   
   #checkChar(char) {
@@ -372,16 +444,49 @@ export class Validator {
     }
   }
   
-  #checkAssign(assign) {
-    const name = assign.name.value
+  #checkAssign(assign, scope, isInConstructor) {
+    // console.log(assign)
+    if(assign.access.type == 'dot') {
+      const left = this.#checkExpr(assign.access.left, scope)
+      const val = this.#checkExpr(assign.value, scope)
+      const name = assign.access.right.value
+      
+      if (!left.typ.has_field(name)) return this.#error(`cannot find field '${name}' in '${typ.class.name}'`, assign.access.right, { ...assign, left })
+      const typ = left.typ.get_field(name)
+      
+      if (!val.typ.isAssignableTo(typ)) this.#error(`'${val.typ}' is not assignable to '${typ}'`, assign.access.right)
+      
+      if (typ.isConst) {
+        if (isInConstructor) {
+          if (typ.isInit) this.#error(`constant field '${name}' is already assigned in '${scope.self.class.name}'`, assign.access)
+          else typ.isInit = true
+        } else this.#error(`cannot assign to constant field '${name}' in '${scope.self.class.name}'`, assign.access)
+      }
+      
+      return { ...assign, left, val, typ }
+    }
     
-    if (this.#global.has_constant(name)) return this.#error(`cannot assign value of const`, assign.name, assign)
-    if (!this.#global.has_variable(name)) return this.#error(`cannot find variable ${name}`, assign.name, assign)
+    const name = assign.access.value
     
-    const typ = this.#global.get_variable(name)
+    if (scope.has_const?.(name)) return this.#error(`cannot assign to const variable '${name}'`, assign.access, assign)
+    
+    let typ
+    
+    if (scope.has_var?.(name)) typ = scope.get_var(name)
+    if (scope.has_field?.(name)) typ = scope.get_field(name)
+    if (scope.has_const?.(name)) typ = scope.get_const(name)
+    
+    if (!typ) return this.#error(`cannot find variable '${name}'`, assign.access, assign)
+    
     const val = this.#checkExpr(assign.value)
+    if(!val.typ.isAssignableTo(typ)) this.#error(`'${val.typ}' is not assignable to '${typ}'`, assign.value)
     
-    if(!val.typ.isAssignableTo(typ)) this.#error(`value of type ${val.typ} is not assignable to variable of type ${typ}`, assign.value)
+    if(typ.isConst) {
+      if (isInConstructor) {
+        if (typ.isInit) this.#error(`constant field '${name}' is already assigned in '${scope.self.class.name}'`, assign.access)
+        else typ.isInit = true
+      } else this.#error(`cannot assign to constant field '${name}' in '${scope.self.class.name}'`, assign.access)
+    }
     
     return { ...assign, typ, val }
   }
@@ -419,13 +524,12 @@ export class Validator {
   #checkDot(dot, scope) {
     const left = this.#checkExpr(dot.left, scope)
     const name = dot.right?.value
-    
-    
-    if(left.typ.kind == 'special' && left.typ.type == 'any') {
+    // console.log(left, name)
+    if(left.typ?.kind == 'special' && left.typ.type == 'any') {
       return { ...dot, left, typ: ANY} 
     }
     
-    if(!left.typ.has_field(name)) this.#error(`connot find field ${name} in ${left.typ}`, dot.right)
+    if(!left.typ?.has_field(name)) return this.#error(`connot find field ${name} in ${left.typ}`, dot.right, dot)
     
     const typ = left.typ.get_field(name) || ANY
     
@@ -436,8 +540,6 @@ export class Validator {
     const left = this.#checkExpr(op.left, scope)
     const right = this.#checkExpr(op.right, scope)
     const operator = op.operator.value
-    
-    // if(!op_names.has(operator)) return this.#error(`'${operator}' is not an operator.`, op.operator, { ...op, typ: ANY })
     
     const name = op_names.get(operator)
     
@@ -487,15 +589,29 @@ export class Validator {
   
   // #checkOpEquals() {}
   
-  #checkNew(n) {
+  #checkNew(n, scope) {
     const name = n.name?.value
     
     if(!this.#global.has_class(name))
-      return this.#error(`cannot find class '${name}'`, n.name, { n, typ: ANY })
+      return this.#error(`cannot find class '${name}'`, n.name, { ...n, typ: ANY })
     
     const typ = new InstanceType(this.#global.get_class(name))
+    const args = n.args.map(e => this.#checkExpr(e, scope))
+    const typeArgs = args.map(a => a.typ)
     
-    return { ...n, typ }
+    if (!typ.has_meth('constructor')) return this.#error(`cannot find constructor in '${name}'`, { ...n, typ: ANY })
+    if (!typ.has_meth('constructor', typeArgs)) {
+      const meths = typ.get_meths('constructor')
+      const errors = []
+      
+      errors.push(`cannot find suitable constructor for ${name}(${typeArgs})`)
+      for (let params of meths.keys()) errors.push(`   ${name}${params} is not applicable`)
+      return this.#error(errors.join('\n\n') + '\n\n', n.name, { ...n, typ: ANY })
+    }
+    
+    const param = typ.get_meth_params('constructor', typeArgs)
+    
+    return { ...n, typ, param, args }
   }
   
   #checkType(expr, allow_void) {
@@ -533,7 +649,7 @@ export class Validator {
   
   // error
   #err(err) {
-    this.#ast.errors.push(err)
+    this.#errors.push(err)
   }
   
   #error(msg, token, ret) {
@@ -552,6 +668,8 @@ export class Validator {
       start = symbol.start
       end = symbol.end
     }
+    
+    // if()
     
     this.#err({
       type: 'err',
@@ -573,4 +691,8 @@ function error(msg, token) {
 
 function is_any(type) {
   return type.kind == 'special' && type.type == 'any'
+}
+
+function is_void(type) {
+  return type.kind == 'special' && type.type == 'void'
 }

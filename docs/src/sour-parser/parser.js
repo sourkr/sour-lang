@@ -5,16 +5,25 @@ const single = '<>'
 
 export class Parser {
   #tokens
-    
+  #ast = []
+  
   constructor(input) {
     this.#tokens = new Tokenizer(input)
   }
   
-  next() {
-    return this.#parseStmt()
+  parse() {
+    if(this.#ast.length) return this.#ast
+    let stmt
+    
+    while ((stmt = this.#parseStmt()) != null)
+      this.#ast.push(stmt)
+      
+    return this.#ast
   }
   
   #parseStmt() {
+    // if (this.#tokens.peek().type == )
+    
     switch(true) {
       case this.#isKeyword('var'):    return this.#parseVar()
       case this.#isKeyword('const'):  return this.#parseConst()
@@ -81,11 +90,12 @@ export class Parser {
   }
   
   #parseConst() {
-    this.#nextToken() // skip 'const'
-    
     let valType
+    let value
     
-    if (!this.#isIdent()) return unexpected(this.#nextToken(), 'var', {})
+    const kw = this.#nextToken()
+    
+    if (!this.#isIdent()) return unexpected(this.#nextToken(), 'const', { kw })
     const name = this.#nextToken()
     
     if (this.#isPunc(':')) {
@@ -94,13 +104,16 @@ export class Parser {
       valType = this.#parseType()
     }
     
-    if(!this.#isPunc('=')) return unexpected(this.#nextToken(), 'const', { name, valType })
-    this.#nextToken() // skip '='
+    if (this.#isPunc('=')) {
+      this.#nextToken() // skip '='
     
-    const value = this.#parseExpr()
-    if (is_error(value)) return unexpected(value, 'const', { name, valType })
+      value = this.#parseExpr()
+      if (is_error(value)) return unexpected(value, 'const', { kw, name, valType })
+    }
     
-    return { type: 'const', name, valType, value }
+    if (!(valType || value)) return unexpected(this.#nextToken(), 'const', { kw, name, valType, value })
+    
+    return { type: 'const', kw, name, valType, value }
   }
   
   #parseFun() {
@@ -117,7 +130,7 @@ export class Parser {
     const ret = this.#parseType()
     const body = this.#parseBlock()
     
-    return { type: 'fun', kw, name, body, ret }
+    return { type: 'fun', kw, name, params, body, ret }
   }
   
   #parseClass() {
@@ -217,21 +230,32 @@ export class Parser {
     }
     
     while (true) {
-      if (!this.#isIdent()) return error(`expecting ')'`, this.#nextToken())
-      const name = this.#nextToken()
-      
-      this.#skip() // ':'
-      const type = this.#parseType()
-      
-      params.push({ name, type })
+      params.push(this.#parseParam())
       
       if(this.#isPunc(')')) {
-        this.#skip() // ')'
+        this.#skip()
+        return params
+      }
+      
+      if(!this.#isPunc(',')) {
+        params.push(error("expecting ','", this.#nextToken()))
         return params
       }
       
       this.#skip() // ','
     }
+  }
+  
+  #parseParam() {
+    if (!this.#isIdent()) return unexpected(this.#nextToken(), 'param', {})
+    const name = this.#nextToken()
+    
+    if (!this.#isPunc(':')) return unexpected(this.#nextToken(), 'param', { name })
+    this.#skip()
+    
+    const paramType = this.#parseType()
+    
+    return { type: 'param', name, paramType }
   }
   
   #parseBody() {
@@ -348,26 +372,47 @@ export class Parser {
     return { type: 'neg', sign, value }
   }
   
-  #parseAssign(name) {
+  #parseAssign(access) {
     this.#skip() // '='
     
     if(this.#isPunc('=')) {
       const operator = this.#nextToken()
       const right = this.#parseExpr()
       
-      return { type: 'op', left: name, right, operator }
+      return { type: 'op', left: access, right, operator }
     }
     
     const value = this.#parseExpr()
     
-    return { type: 'assign', name, value }
+    return { type: 'assign', access, value }
   }
   
   #parseNew(kw) {
     if(!this.#isIdent()) return unexpected(this.#nextToken(), 'new', { kw })
     const name = this.#nextToken()
+    const args = []
     
-    return { type: 'new', kw, name }
+    if(!this.#isPunc('(')) return unexpected(this.#nextToken(), 'new', { kw, name, args })
+    this.#skip() // '('
+    
+    if(this.#isPunc(')')) {
+      this.#skip()
+      return { type: 'new', kw, name, args }
+    }
+    
+    while (true) {
+      args.push(this.#parseExpr())
+      
+      if(this.#isPunc(')')) {
+        this.#skip()
+        return { type: 'new', kw, name, args }
+      }
+      
+      if(!this.#isPunc(',')) return unexpected(this.#nextToken(), 'new', { kw, name, args })
+      this.#skip()
+    }
+    
+    return { type: 'new', kw, name, args }
   }
   
   #mayDot(left) {
@@ -378,7 +423,7 @@ export class Parser {
     if(!this.#isIdent()) return unexpected(this.#nextToken(), 'dot', { left })
     const right = this.#nextToken()
     
-    return this.#mayCall(this.#mayDot({ type: 'dot', left, right }))
+    return this.#mayCall(this.#mayAssign(this.#mayDot({ type: 'dot', left, right })))
   }
   
   #parseArray() {
@@ -501,13 +546,22 @@ export class Parser {
     return { type: 'as', expr, kw, castType }
   }
   
+  #mayAssign(access) {
+    if(!this.#isPunc('=')) return access
+    this.#skip()
+    
+    const value = this.#parseExpr()
+    
+    return { type: 'assign', access, value }
+  }
+  
   // type
   #parseType() {
     if(!this.#isIdent())
       return unexpected(this.#nextToken(), 'instance', {})
-    const name = this.#nextToken()
     
-    return this.#mayArrayType({ type: 'instance', name })
+    const name = this.#nextToken()
+    return this.#mayArrayType({ type: 'instance', name, start: name.start, end: name.end })
   }
   
   #mayArrayType(type) {
@@ -544,26 +598,28 @@ export class Parser {
   
   #nextToken() {
     const tok = this.#tokens.next()
-    if(tok.type == 'cmt') return this.#nextToken()
+    
+    if(tok.type == 'cmt') {
+      this.#ast.push(tok)
+      return this.#nextToken()
+    }
+    
     return tok
   }
   
   #peekToken() {
     const tok = this.#tokens.peek()
-    if (tok.type == 'cmt') return this.#tokens.next() && this.#peekToken()
+    
+    if (tok.type == 'cmt') {
+      this.#ast.push(this.#tokens.next())
+      return this.#peekToken()
+    }
+    
     return tok
   }
   
   #skip() {
     this.#nextToken()
-  }
-  
-  forEach(f) {
-    let stmt
-    
-    while ((stmt = this.next()) != null) {
-      f(stmt)
-    }
   }
 }
 

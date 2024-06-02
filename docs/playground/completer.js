@@ -1,6 +1,6 @@
 import { Completion } from './sour-editor/completion.js';
 import { BUILTINS } from '../src/sour-validator/builtin.js';
-import { GlobalScope, MethodScope, FunctionType, VarType, InstanceType, MethodType, ClassType } from '../src/sour-validator/types.js';
+import { GlobalScope, MethodScope, FunctionType, VarType, InstanceType, MethodType, ClassType, ConstType } from '../src/sour-validator/types.js';
 
 export class Completer {
   static global = new GlobalScope(BUILTINS)
@@ -11,7 +11,9 @@ export class Completer {
     
     this.global = new GlobalScope(BUILTINS)
     
-    editor.showCompletion(this.listBody(ast.body, index, len))
+    editor.showCompletion(this.listBody(ast.body, index, len)
+      .filter((a, index, array) => array.slice(0, index - 1).some(b => a.full === b.full))
+      .sort((a, b) => a.compare(b)))
   }
   
   static listBody(body, index, len, scope = this.global, kws) {
@@ -26,6 +28,17 @@ export class Completer {
         
         this.global.def_var(stmt.name?.value, stmt.typ)
       }
+      
+      if (stmt.type == 'const') {
+        if (isInsideTok(index, stmt.valType?.name, len))
+          return this.listTypes(stmt.valType.name.value.substring(0, index - stmt.valType?.name?.start?.index))
+        
+        const list = this.listBody([stmt.val], index, len, scope, ['new'])
+        if(list.length) return list
+        
+        this.global.def_var(stmt.name?.value, stmt.typ)
+      }
+      
       
       if (stmt.type == 'ret') {
         const list = this.listBody([stmt.val], index, len, scope, [])
@@ -56,6 +69,7 @@ export class Completer {
         const cls = new ClassType(stmt.name?.value, [])
         
         if(!stmt.body) continue
+        this.global.def_class(stmt.name.value, cls)
         
         for(let stmt2 of stmt.body) {
           if(!stmt2) continue
@@ -63,7 +77,7 @@ export class Completer {
           if(stmt2.type == 'ident') {
             if (isInsideTok(index, stmt2, len)) {
               const name = stmt2.value
-              return this.listKw(name.substring(0, index - stmt2.start.index), ['var', 'fun'])
+              return this.listKw(name.substring(0, index - stmt2.start.index), ['var', 'const', 'fun'])
             }
           }
           
@@ -74,21 +88,35 @@ export class Completer {
             cls.def_field(stmt2.name?.value, stmt2.val.typ)
           }
           
+          if (stmt2.type == 'const') {
+            if (isInsideTok(index, stmt2.valType?.name, len))
+              return this.listTypes(stmt2.valType.name.value.substring(0, index - stmt2.valType?.name?.start?.index))
+            
+            cls.def_field(stmt2.name?.value, stmt2.typ)
+          }
+          
           if(stmt2.type == 'fun') {
-            const mScope = new MethodScope(this.global, cls)
+            const mScope = new MethodScope(this.global, new InstanceType(cls))
             const list = []
             
-            console.log(stmt2)
+            // console.log(stmt2)
+            stmt2.paramList.params.forEach(param => {
+              mScope.def_var(param.name, param.type)
+            })
             
-            list.push(this.listType(stmt2.ret, index, len))
+            if (isInsideTok(index, stmt2.name, len)) {
+              const prefix = stmt2.name.value.substring(0, index - stmt2.name.start.index)
+              list.push(new Completion(prefix, 'constructor'.substring(prefix.length)))
+            }
+            
+            list.push(...stmt2.params.map(param => this.listType(param.paramType, index, len)).flat())
+            list.push(...this.listType(stmt2.ret, index, len))
             list.push(...this.listBody(stmt2.body, index, len, mScope, ['return']))
             
             if (list.length) return list
           }
         }
       
-        
-        
         // const list = this.listBody(stmt.body, index, len)
         // if(list.length) return list
       }
@@ -103,6 +131,12 @@ export class Completer {
       if (stmt.type == 'op') {
         const list = this.listBody([ stmt.right ], index, len, scope)
         if(list.length) return list
+      }
+      
+      if (stmt.type == 'new') {
+        if (isInsideTok(index, stmt.name, len)) {
+          return this.listTypes(stmt.name.value.substring(0, index - stmt.name.start.index))
+        }
       }
     }
     
@@ -125,22 +159,23 @@ export class Completer {
     // console.log(prefix)
     return [
       ...this.listKw(prefix, kws),
-      ...this.listVars(prefix),
+      ...this.listConsts(prefix, scope),
+      ...this.listVars(prefix, scope),
       ...this.listFields(prefix, scope),
       ...this.listFuns(prefix),
     ]
   }
   
   static listKw(prefix, list) {
-    return (list || ['var', 'class', 'new', 'as', 'fun'])
+    return (list || ['var', 'class', 'new', 'as', 'fun', 'const'])
       .filter(kw => kw.startsWith(prefix))
       .map(kw => new Completion(prefix, kw.substring(prefix.length)))
   }
   
-  static listVars(prefix) {
+  static listVars(prefix, scope) {
     const completions = []
     
-    this.global.get_vars().forEach((type, name) => {
+    scope.get_vars().forEach((type, name) => {
       if(!name) return
       if(!name.startsWith(prefix)) return
       // console.log(name, type)
@@ -151,6 +186,19 @@ export class Completer {
     return completions
   }
   
+  static listConsts(prefix, scope) {
+    const completions = []
+  
+    scope.get_consts?.().forEach((type, name) => {
+      if (!name) return
+      if (!name.startsWith(prefix)) return
+      // console.log(name, type)
+      const typ = new ConstType(name, type).toHTML()
+      completions.push(new Completion(prefix, name.substring(prefix.length), typ))
+    })
+  
+    return completions
+  }
   
   static listFuns(prefix) {
     const completions = []
@@ -190,8 +238,7 @@ export class Completer {
     if (scope instanceof MethodScope) {
       scope.get_fields().forEach((type, name) => {
         if (!name.startsWith(prefix)) return
-      
-        const typ = `${scope.class.name}.${name}: ${type?.toHTML()}`
+        const typ = `${scope.self.class.name}.${name}: ${type?.toHTML()}`
         completions.push(new Completion(prefix, name.substring(prefix.length), typ))
       })
       
@@ -200,8 +247,9 @@ export class Completer {
     
     if (scope instanceof InstanceType) {
       const instance = scope
-      
-      instance.get_vars().forEach((type, name) => {
+      // console.log(instance)
+      instance.get_fields().forEach((type, name) => {
+        // console.log(name)
         if (!name.startsWith(prefix)) return
       
         const typ = `${instance.class.name}.${name}: ${type.toHTML()}`

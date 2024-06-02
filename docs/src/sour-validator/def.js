@@ -33,7 +33,13 @@ export class DefinationValidator {
       const generic = cls.generic
       
       stmt.body.forEach(stmt => {
-        if (stmt.type == 'const') cls.consts.set(stmt.name.value, this.#checkType(stmt.value))
+        if (stmt.type == 'const') {
+          const type = this.#checkType(stmt.value)
+          type.isConst = true
+          type.isInit = true
+          cls.def_field(stmt.name.value, type)
+        }
+        
         if (stmt.type == 'var') cls.vars.set(stmt.name.value, this.#checkType(stmt.value))
       
         if (stmt.type == 'fun') {

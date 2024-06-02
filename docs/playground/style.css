@@ -19,6 +19,7 @@ sour-editor {
   flex: 1;
   background: white;
   padding-top: 10px;
+  padding-right: 10px;
   border-radius: 10px;
   box-shadow: 0 0 5px lightgray;
   font-family: "Fira Code", monospace;

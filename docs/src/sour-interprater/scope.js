@@ -30,6 +30,7 @@ export class Instance {
   
   // vars
   set_var(name, value) {
+    // console.log(name, value)
     this.vars.set(name, value)
   }
   
@@ -37,12 +38,18 @@ export class Instance {
     return this.vars.get(name)
   }
   
+  has_meth(name, params) {
+    return this.class.meths.get(name)?.has(params)
+  }
+  
   get_meth(name, params) {
+    // console.log(Object.fromEntries(this.class.meths.get(name)))
     return this.class.meths.get(name).get(params)
   }
   
   toString() {
-    return this.get_meth('str', '()')(this)
+    if(!this.has_meth('str', '()')) return `[object Object]`
+    return this.get_meth('str', '()')(this).value
   }
 }
 
@@ -71,6 +78,7 @@ export class BuiltinScope {
   }
   
   get_fun(name, params) {
+    // console.log({ name, params })
     return this.funs.get(name).get(params)
   }
 }
@@ -115,12 +123,34 @@ export class GlobalScope {
 }
 
 export class MethodScope {
+  vars = new Map()
+  
   constructor(global, self) {
     this.global = global
     this.self = self
   }
   
+  def_var(name, value) {
+    this.vars.set(name, value)
+  }
+  
   get_var(name) {
-    return this.self.get_var(name)
+    return this.vars.get(name)
+      || this.self.get_var(name)
+  }
+  
+  set_var(name, value) {
+    if(this.vars.has(name))
+      this.vars.set(name, value)
+    else this.self.set_var(name, value)
+  }
+  
+  // meths
+  has_meth(name, params) {
+    return this.self.has_meth(name, params)
+  }
+  
+  get_meth(name, params) {
+    return this.self.get_meth(name, params)
   }
 }

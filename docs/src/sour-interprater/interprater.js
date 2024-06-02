@@ -62,10 +62,12 @@ export class Interprater {
       if(stmt.val) value = this.#interprateExpr(stmt.val, scope)
       else value = getDefault(stmt.valType)
       
-      this.#global.def_var(stmt.name.value, value)
+      scope.def_var(stmt.name.value, value)
     }
     
-    if (stmt.type == 'const') this.#global.def_var(stmt.name.value, this.#interprateExpr(stmt.val))
+    if (stmt.type == 'const') {
+      scope.def_var(stmt.name.value, this.#interprateExpr(stmt.val, scope))
+    }
     
     if (stmt.type == 'class') {
       const name = stmt.name.value
@@ -79,10 +81,17 @@ export class Interprater {
           cls.def_var(name, stmt.val)
         }
         
+        if(stmt.type == 'const') {
+          cls.def_var(name, stmt.val)
+        }
+        
         if (stmt.type == 'fun') {
-          console.log(name, stmt.params)
-          cls.def_meth(name, stmt.params, (self, ...args) => {
+          cls.def_meth(name, stmt.param, (self, ...args) => {
             const mScope = new MethodScope(this.#global, self)
+            
+            mScope.def_var('this', self)
+            stmt.paramList.params.forEach((param, index) => mScope.def_var(param.name, args[index]))
+            
             return this.#interprateBody(stmt.body, mScope)
           })
         }
@@ -123,7 +132,6 @@ export class Interprater {
   }
   
   #interprateBody(body, scope = this.#global) {
-    // console.log(scope)
     for(let stmt of body) {
       if(stmt.type == 'ret') return this.#interprateExpr(stmt.val, scope)
       this.#interprateStmt(stmt, scope)
@@ -154,15 +162,25 @@ export class Interprater {
       
       if(expr.access.type == 'dot') {
         const left = this.#interprateExpr(expr.access.left, scope)
-        // console.log(left.get_meth(expr.access.right.value, expr.params))
-        return left.get_meth(expr.access.right.value, expr.params)(left, ...args)
+        return left.get_meth(expr.access.right.value, expr.param)(left, ...args)
       }
       
-      this.#global.get_fun(expr.access.value, expr.params)(...args)
+      const name = expr.access.value
+      
+      if(scope.has_meth?.(name, expr.param)) return scope.get_meth(name, expr.param)(scope.self, ...args)
+      else return scope.get_fun?.(name, expr.param)(...args)
     }
     
     if (expr.type == 'assign') {
-      this.#global.set_variable(expr.name.value, this.#interprateExpr(expr.val))
+      const value = this.#interprateExpr(expr.val, scope)
+      
+      if(expr.access.type == 'dot') {
+        const left = this.#interprateExpr(expr.access.left, scope)
+        left.set_var(expr.access.right.value, value)
+        return
+      }
+      
+      scope.set_var(expr.access.value, value)
     }
     
     if (expr.type == 'array') {
@@ -187,10 +205,10 @@ export class Interprater {
       if (expr.isEquals) {
         if('<>'.includes(expr.operator.value)) {
           if(result.value) return result
-          return left.get_method('equals', expr.eqParams)(left, right)
+          return left.get_meth('equals', expr.eqParams)(left, right)
         }
         
-        this.#global.set_variable(expr.left.value, result)
+        scope.set_var(expr.left.value, result)
       }
       
       return result
@@ -215,6 +233,12 @@ export class Interprater {
       const ins = cls.instance()
       
       cls.get_vars().forEach((expr, name) => ins.set_var(name, this.#interprateExpr(expr)))
+      
+      // console.log(ins.get_meth('constructor', expr.param))
+      const args = expr.args.map(arg => this.#interprateExpr(arg, scope))
+      
+      if(expr.param)
+        ins.get_meth('constructor', expr.param)(ins, ...args)
       
       return ins
     }
