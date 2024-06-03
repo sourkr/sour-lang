@@ -501,14 +501,12 @@ export class BuiltinScope {
 }
 
 export class GlobalScope {
-  #builins
-  
   consts = new Map()
   vars = new Map()
   classes = new Map()
   
   constructor(builins) {
-    this.#builins = builins
+    this.builins = builins
   }
   
   // consts
@@ -544,19 +542,19 @@ export class GlobalScope {
   
   // funs
   has_fun(name, args) {
-    return this.#builins.has_fun(name, args)
+    return this.builins.has_fun(name, args)
   }
   
   get_fun_params(name, args) {
-    return this.#builins.get_fun_params(name, args)
+    return this.builins.get_fun_params(name, args)
   }
   
   get_fun(name, args) {
-    return this.#builins.get_fun(name, args)
+    return this.builins.get_fun(name, args)
   }
   
   get_funs(name) {
-    return this.#builins.get_funs(name)
+    return this.builins.get_funs(name)
   }
   
   
@@ -567,17 +565,17 @@ export class GlobalScope {
   
   has_class(name) {
     return this.classes.has(name)
-      || this.#builins.has_class(name)
+      || this.builins.has_class(name)
   }
   
   get_class(name) {
     return this.classes.get(name)
-      || this.#builins.get_class(name)
+      || this.builins.get_class(name)
   }
   
   get_classes() {
     return new Map([
-      ...this.#builins.classes,
+      ...this.builins.classes,
       ...this.classes
     ])
   }
@@ -586,7 +584,7 @@ export class GlobalScope {
   // all
   has(name) {
     return this.has_class(name)
-      || this.#builins.has(name)
+      || this.builins.has(name)
   }
 }
 

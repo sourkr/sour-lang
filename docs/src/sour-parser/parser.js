@@ -146,14 +146,14 @@ export class Parser {
   }
   
   #parseIf() {
-    this.#skip() // 'if'
+    const kw = this.#nextToken()
     
-    if(!this.#isPunc('(')) return new unexpected(this.#nextToken(), 'if', {})
+    if(!this.#isPunc('(')) return new unexpected(this.#nextToken(), 'if', { kw })
     this.#skip()
     
     const condition = this.#parseExpr()
     
-    if(!this.#isPunc(')')) return new unexpected(this.#nextToken(), 'if', { condition })
+    if(!this.#isPunc(')')) return new unexpected(this.#nextToken(), 'if', { kw, condition })
     this.#skip()
     
     const body = this.#parseBody()
@@ -166,7 +166,7 @@ export class Parser {
       elseBody = this.#parseBody()
     }
     
-    return { type: 'if', condition, body, elseBody }
+    return { type: 'if', kw, condition, body, elseBody }
   }
   
   #parseWhile() {

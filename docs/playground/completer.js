@@ -12,7 +12,7 @@ export class Completer {
     this.global = new GlobalScope(BUILTINS)
     
     editor.showCompletion(this.listBody(ast.body, index, len)
-      .filter((a, index, array) => array.slice(0, index - 1).some(b => a.full === b.full))
+      .filter((a, index, array) => array.some((b, i) => !(a.full == b.full && i < index)))
       .sort((a, b) => a.compare(b)))
   }
   
@@ -109,9 +109,9 @@ export class Completer {
               list.push(new Completion(prefix, 'constructor'.substring(prefix.length)))
             }
             
-            list.push(...stmt2.params.map(param => this.listType(param.paramType, index, len)).flat())
+            list.push(...(stmt2.params?.map?.(param => this.listType(param.paramType, index, len)).flat() || []))
             list.push(...this.listType(stmt2.ret, index, len))
-            list.push(...this.listBody(stmt2.body, index, len, mScope, ['return']))
+            list.push(...this.listBody(stmt2.body, index, len, mScope, ['return', 'if']))
             
             if (list.length) return list
           }

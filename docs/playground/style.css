@@ -24,6 +24,7 @@ sour-editor {
   box-shadow: 0 0 5px lightgray;
   font-family: "Fira Code", monospace;
   tab-size: 2;
+  font-size: .75rem;
 }
 
 #output {
@@ -31,4 +32,5 @@ sour-editor {
   margin: 0;
   border: none;
   box-shadow: 0 0 5px lightgray;
+  font-size: .75rem;
 }

@@ -38,7 +38,7 @@ export class Validator {
       case 'const': return this.#checkConst(stmt, scope)
       case 'fun'  : return this.#checkFun(stmt)
       case 'class': return this.#checkClass(stmt, scope)
-      case 'if'   : return this.#checkIf(stmt)
+      case 'if'   : return this.#checkIf(stmt, scope)
       case 'while': return this.#checkWhile(stmt)
       case 'for'  : return this.#checkFor(stmt)
       case 'ret'  : return this.#checkRet(stmt, scope)
@@ -217,12 +217,12 @@ export class Validator {
           if (param.type == 'err') this.#err(param)
           
           const typ = this.#checkType(param.paramType)
-          mScope.def_const(param.name.value, typ)
+          mScope.def_const(param.name?.value, typ)
           
           return { ...param, typ }
         })
         
-        const paramList = new ParamList(params.map(p => new ParamType(p.name?.value, p.typ)))
+        const paramList = new ParamList(params?.map(p => new ParamType(p.name?.value, p.typ)) || [])
         const typ = this.#checkType(stmt.ret, true)
         
         let body
@@ -230,20 +230,19 @@ export class Validator {
         if (name == 'constructor') {
           if (!is_void(typ)) this.#error(`return type of constructor must be 'void'`, stmt.ret)
           
-          body = stmt.body?.map(stmt => {
+          body = stmt.body?.map?.(stmt => {
             if(stmt.type == 'assign')
               return this.#checkAssign(stmt, mScope, true)
             
             return this.#checkStmt(stmt, mScope)
           })
           
-          
         } else body = this.#checkBody(stmt.body, mScope)
         
         let returns = false
         
         body?.forEach?.(stmt => {
-          if (stmt.type == 'ret') {
+          if (stmt?.type == 'ret') {
             if (!stmt.val.typ.isAssignableTo(typ))
               this.#error(`'${stmt.val.typ}'' is not assignable to '${typ}'`, stmt.kw)
             returns = true
@@ -271,12 +270,13 @@ export class Validator {
     return { ...stmt, body }
   }
   
-  #checkIf(s) {
-    const condition = this.#checkExpr(s.condition)
-    if(condition.typ.class.name != 'bool') this.#error(`condition must be boolean`, s.condition)
+  #checkIf(s, scope) {
+    const condition = this.#checkExpr(s.condition, scope)
     
-    const body = this.#checkBody(s.body)
-    const elseBody = this.#checkBody(s.elseBody)
+    if(!is_bool(condition.typ)) this.#error(`condition must be boolean`, s.kw)
+    
+    const body = this.#checkBody(s.body, scope)
+    const elseBody = this.#checkBody(s.elseBody, scope)
     
     return { ...s, condition, body, elseBody }
   }
@@ -370,7 +370,6 @@ export class Validator {
     if(!scope.has_fun(name))
       return this.#error(`cannot not find function ${name}`, call.access, call)
     
-    // console.log(args)
     if(!scope.has_fun(name, typeArgs)) {
       const funs = scroll.get_funs(name)
       const errors = []
@@ -445,7 +444,6 @@ export class Validator {
   }
   
   #checkAssign(assign, scope, isInConstructor) {
-    // console.log(assign)
     if(assign.access.type == 'dot') {
       const left = this.#checkExpr(assign.access.left, scope)
       const val = this.#checkExpr(assign.value, scope)
@@ -466,6 +464,8 @@ export class Validator {
       return { ...assign, left, val, typ }
     }
     
+    if (is_error(assign.value)) return { ...assign, typ: ANY }
+    
     const name = assign.access.value
     
     if (scope.has_const?.(name)) return this.#error(`cannot assign to const variable '${name}'`, assign.access, assign)
@@ -477,6 +477,7 @@ export class Validator {
     if (scope.has_const?.(name)) typ = scope.get_const(name)
     
     if (!typ) return this.#error(`cannot find variable '${name}'`, assign.access, assign)
+    
     
     const val = this.#checkExpr(assign.value)
     if(!val.typ.isAssignableTo(typ)) this.#error(`'${val.typ}' is not assignable to '${typ}'`, assign.value)
@@ -494,7 +495,6 @@ export class Validator {
   #checkArray(arr) {
     if(arr.err) this.#err(arr.err)
     
-    // console.log(arr.values)
     
     const values = arr.values.map(this.#checkExpr.bind(this))
     
@@ -541,10 +541,12 @@ export class Validator {
     const right = this.#checkExpr(op.right, scope)
     const operator = op.operator.value
     
-    const name = op_names.get(operator)
+    // if(is_error(right)) return { ...op, typ: ANY }
     
-    if(!left.typ.has_meth(name, [right.typ]))
-      return this.#error(`cannot find operator (${left.typ} ${operator}${op.isEquals?'=':''} ${right.typ})`, operator, { ...op, left, right })
+    const name = op_names.get(operator)
+    // console.log(name)
+    if(!left.typ.has_meth?.(name, [right.typ]))
+      return this.#error(`cannot find operator (${left.typ} ${operator}${op.isEquals?'=':''} ${right.typ})`, op.operator, { ...op, left, right })
       
     const params = left.typ.get_meth_params(name, [right.typ])
     const typ = left.typ.get_meth(name, [right.typ])
@@ -681,9 +683,9 @@ export class Validator {
   }
 }
 
-// function is_error(symbol) {
-  // return symbol.type == 'err'
-// }
+function is_error(symbol) {
+  return symbol.type == 'err'
+}
 
 function error(msg, token) {
   return { type: 'err', msg, start: token?.start, end: token?.end }
@@ -695,4 +697,8 @@ function is_any(type) {
 
 function is_void(type) {
   return type.kind == 'special' && type.type == 'void'
+}
+
+function is_bool(type) {
+  return type?.class?.name == 'bool'
 }

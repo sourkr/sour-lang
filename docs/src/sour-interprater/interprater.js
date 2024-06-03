@@ -1,5 +1,5 @@
 import { Validator } from '../sour-validator/validator.js';
-import { BUILTIN, byte, int, str } from './builtin.js';
+import { BUILTIN, byte, int, str, char } from './builtin.js';
 import { GlobalScope, MethodScope, Class } from './scope.js';
 import { Stream } from './stream.js';
 
@@ -99,8 +99,8 @@ export class Interprater {
     }
     
     if (stmt.type == 'if') {
-      if(this.#interprateExpr(stmt.condition).value) this.#interprateBody(stmt.body)
-      else this.#interprateBody(stmt.elseBody)
+      if(this.#interprateExpr(stmt.condition, scope).value) this.#interprateBody(stmt.body, scope)
+      else this.#interprateBody(stmt.elseBody, scope)
     }
     
     if (stmt.type == 'while') {
@@ -144,7 +144,7 @@ export class Interprater {
     if (expr.type == 'str') return str(expr.val)
     if (expr.type == 'float') return float(expr.val)
     if (expr.type == 'int') return int(expr.val)
-    if (expr.type == 'char') return new Char(expr.val.charCodeAt(0))
+    if (expr.type == 'char') return char(expr.val.charCodeAt(0))
     
     if (expr.type == 'ident') {
       const name = expr.value
@@ -231,14 +231,11 @@ export class Interprater {
       const name = expr.name.value
       const cls = this.#global.get_class(name)
       const ins = cls.instance()
+      const args = expr.args.map(arg => this.#interprateExpr(arg, scope))
       
       cls.get_vars().forEach((expr, name) => ins.set_var(name, this.#interprateExpr(expr)))
       
-      // console.log(ins.get_meth('constructor', expr.param))
-      const args = expr.args.map(arg => this.#interprateExpr(arg, scope))
-      
-      if(expr.param)
-        ins.get_meth('constructor', expr.param)(ins, ...args)
+      ins.get_meth('constructor', expr.param)(ins, ...args)
       
       return ins
     }

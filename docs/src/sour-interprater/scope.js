@@ -153,4 +153,9 @@ export class MethodScope {
   get_meth(name, params) {
     return this.self.get_meth(name, params)
   }
+  
+  // funs
+  get_fun(name, params) {
+    return this.global.get_fun(name, params)
+  }
 }

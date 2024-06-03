@@ -47,7 +47,6 @@ export const char = create.bind(CHAR)
   BOOL.def_meth('constructor', '', (self, value) => self.value = value)
   
   BOOL.def_meth('plus', '(str)', (self, right) => str(self.value + right.value))
-  
   BOOL.def_meth('str', '()', self => str(self.value + ''))
   
   BUILTIN.classes.set('bool', BOOL)
@@ -56,6 +55,7 @@ export const char = create.bind(CHAR)
 // char
 {
   CHAR.def_meth('constructor', '', (self, value) => self.value = value)
+  CHAR.def_meth('equals', '(char)', (self, c) => bool(c.value == self.value))
   CHAR.def_meth('str', '()', self => str(String.fromCharCode(self.value)))
 }
 

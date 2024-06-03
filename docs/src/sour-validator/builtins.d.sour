@@ -26,7 +26,11 @@ class bool {}
 
 class float {}
 
-class char {}
+class char {
+  fun equals(c: char): bool
+
+  fun str(): str
+}
 
 class array<T> {
   const len: int
