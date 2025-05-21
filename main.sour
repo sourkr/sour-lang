@@ -1,0 +1,29 @@
+export func main(): void { // comment: there must be exported 'main(): void' function
+	print(0) // prints: 0
+	print(10) // 10
+	print(255) // 255
+	
+	// arrays
+	char[2] str = new char[2] // create array of 2 chars 
+	str[0] = 'a'
+	str[1] = 'b'
+
+	for(int i = 0; i < 2; i++)
+		print(str[i]) // ab
+}
+
+func print(ch: char): void {
+	wasm("local.get $ch")
+	wasm("call sys.out")
+}
+
+func print(b: byte) {
+	if (b > 9) {
+		print(b / 10)
+		print(b % 10)
+	} else print((char) b + '0') // char + char = char
+}
+
+/* ...
+... 
+... */
